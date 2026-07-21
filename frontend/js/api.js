@@ -37,28 +37,54 @@ const API = (() => {
     console.log(`[DEV] API di-override dengan MockAPI (role: ${role})`);
   }
 
+  let _cache = {};
+
+  /** Bersihkan semua cache */
+  function clearCache() { _cache = {}; }
+
   /**
    * Fungsi inti: kirim request ke GAS backend.
    * @param {string} action  — nama fungsi di backend (tanpa prefix api_)
    * @param {object} payload — data yang dikirim ke fungsi tersebut
+   * @param {boolean} forceRefresh — paksa ambil dari server
    */
-  async function call(action, payload = {}) {
+  async function call(action, payload = {}, forceRefresh = false) {
     if (!_token) throw new Error("Belum login. Token tidak tersedia.");
+
+    const isGet = action.startsWith('get');
+    const cacheKey = action + '_' + JSON.stringify(payload);
+
+    // 1. Cek Cache untuk request GET
+    if (isGet && !forceRefresh && _cache[cacheKey]) {
+      return _cache[cacheKey]; // Return promise/data yang sudah ada
+    }
+
+    // 2. Jika ini mutasi (save, submit, delete, dll), bersihkan cache agar fresh
+    if (!isGet && action !== 'verifyToken' && action !== 'loginWithGoogle') {
+      clearCache();
+    }
 
     const body = JSON.stringify({ action, token: _token, payload });
 
-    const response = await fetch(CONFIG.GAS_URL, {
+    const fetchPromise = fetch(CONFIG.GAS_URL, {
       method: 'POST',
       body: body
-      // JANGAN set Content-Type: application/json — akan trigger CORS preflight
+    }).then(async response => {
+      if (!response.ok) throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      return await response.json();
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+    // 3. Simpan promise ke cache agar request bersamaan tidak dobel
+    if (isGet) {
+      _cache[cacheKey] = fetchPromise;
     }
 
-    const data = await response.json();
-    return data;
+    try {
+      return await fetchPromise;
+    } catch (err) {
+      if (isGet) delete _cache[cacheKey]; // Hapus cache jika gagal
+      throw err;
+    }
   }
 
   // === AUTH ===
@@ -116,5 +142,5 @@ const API = (() => {
     submit: (payload) => call('submitSupervisi', payload),
   };
 
-  return { setToken, getToken, _devOverride, auth, dashboard, jurnal, absen, jadwal, perangkat, pkl, supervisi, master };
+  return { setToken, getToken, clearCache, _devOverride, auth, dashboard, jurnal, absen, jadwal, perangkat, pkl, supervisi, master };
 })();
