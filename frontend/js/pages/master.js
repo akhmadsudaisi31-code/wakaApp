@@ -275,7 +275,69 @@ const MasterPage = (() => {
 
     // Simpan rowIndex di modal untuk dipakai saat save
     modal.dataset.rowIndex = rowIndex ?? '';
-    modal.style.display    = 'flex';
+    
+    // Jika tabel Master_Lokasi, tambahkan kontainer Map
+    if (_currentTable === 'Master_Lokasi') {
+      body.innerHTML += `
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label">Pilih Lokasi dari Peta (Opsional)</label>
+          <div id="master-map" style="height: 240px; border-radius: var(--radius); border: 1px solid var(--border); z-index: 1;"></div>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Klik pada peta atau geser pin merah untuk mendapatkan latitude & longitude.</p>
+        </div>
+      `;
+    }
+
+    modal.style.display = 'flex';
+
+    // Inisialisasi map jika ada
+    if (_currentTable === 'Master_Lokasi') {
+      setTimeout(() => {
+        const latEl = document.getElementById('mf-latitude');
+        const lngEl = document.getElementById('mf-longitude');
+        let initLat = parseFloat(latEl.value) || -7.03195;
+        let initLng = parseFloat(lngEl.value) || 112.74836;
+        
+        // Coba pakai geolocation user saat tambah baru jika ada
+        if (rowIndex === null && navigator.geolocation && !latEl.value) {
+          navigator.geolocation.getCurrentPosition((pos) => {
+            initLat = pos.coords.latitude;
+            initLng = pos.coords.longitude;
+            setupMap(initLat, initLng, latEl, lngEl);
+          }, () => {
+            setupMap(initLat, initLng, latEl, lngEl);
+          });
+        } else {
+          setupMap(initLat, initLng, latEl, lngEl);
+        }
+      }, 100); // Tunggu modal flex aktif
+    }
+  }
+
+  function setupMap(initLat, initLng, latEl, lngEl) {
+    if (!document.getElementById('master-map')) return;
+    const map = L.map('master-map').setView([initLat, initLng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    const marker = L.marker([initLat, initLng], { draggable: true }).addTo(map);
+    
+    function updateInputs(latlng) {
+      latEl.value = latlng.lat.toFixed(5);
+      lngEl.value = latlng.lng.toFixed(5);
+    }
+    
+    // Saat marker digeser
+    marker.on('dragend', (e) => updateInputs(marker.getLatLng()));
+    // Saat map diklik
+    map.on('click', (e) => {
+      marker.setLatLng(e.latlng);
+      updateInputs(e.latlng);
+    });
+
+    // Fix bug grey tile Leaflet saat di dalam modal
+    setTimeout(() => map.invalidateSize(), 300);
   }
 
   function closeForm() {
