@@ -1,0 +1,106 @@
+<div class="card" id="perangkat-container">
+  <h3><i class="fa-solid fa-folder-open" style="color:var(--primary-light);"></i> Kelengkapan Perangkat Ajar</h3>
+  <p id="perangkat-loading">Memuat data perangkat...</p>
+  
+  <div id="perangkat-content" style="display:none; overflow-x: auto;">
+    <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;" id="table-perangkat">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border); text-align: left; background: var(--background);">
+          <? if (user.role !== 'guru') { ?>
+          <th style="padding: 10px;">Guru</th>
+          <? } ?>
+          <th style="padding: 10px;">Mata Pelajaran</th>
+          <th style="padding: 10px;">Dokumen</th>
+          <th style="padding: 10px;">Status</th>
+          <th style="padding: 10px;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-perangkat">
+        <!-- Render via JS -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function loadPerangkat() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(!res.success) {
+        document.getElementById('perangkat-loading').innerText = "Gagal memuat: " + res.message;
+        return;
+      }
+      
+      document.getElementById('perangkat-loading').style.display = 'none';
+      document.getElementById('perangkat-content').style.display = 'block';
+      
+      const tbody = document.getElementById('tbody-perangkat');
+      tbody.innerHTML = '';
+      
+      if(res.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;">Belum ada data perangkat ajar.</td></tr>';
+        return;
+      }
+      
+      res.data.forEach(row => {
+        let statusBadge = `<span style="background:var(--warning); color:white; padding:3px 8px; border-radius:12px; font-size:0.75rem;">${row.status}</span>`;
+        if(row.status === 'Sudah Kumpul') statusBadge = `<span style="background:var(--primary-light); color:white; padding:3px 8px; border-radius:12px; font-size:0.75rem;">${row.status}</span>`;
+        if(row.status === 'Terverifikasi') statusBadge = `<span style="background:var(--success); color:white; padding:3px 8px; border-radius:12px; font-size:0.75rem;">${row.status}</span>`;
+        
+        let actionBtn = '';
+        if (res.role === 'guru') {
+          actionBtn = `<button class="btn-primary" style="font-size:0.75rem; padding:5px 10px; border-radius:4px; border:none; cursor:pointer;" onclick="uploadDokumen(${row.row_index})"><i class="fa-solid fa-upload"></i> Link</button>`;
+        } else {
+          actionBtn = `
+            <select onchange="verifyDokumen(${row.row_index}, this.value)" style="padding:3px; font-size:0.75rem;">
+              <option value="">Aksi Waka...</option>
+              <option value="Terverifikasi">Set Terverifikasi</option>
+              <option value="Revisi">Minta Revisi</option>
+            </select>
+          `;
+        }
+        
+        let linkHtml = row.link ? `<br><a href="${row.link}" target="_blank" style="font-size:0.75rem;">Buka Dokumen</a>` : '';
+        
+        let cols = '';
+        if (res.role !== 'guru') cols += `<td style="padding: 10px; border-bottom: 1px solid var(--border);">${row.nama_guru}</td>`;
+        
+        cols += `
+          <td style="padding: 10px; border-bottom: 1px solid var(--border);">${row.mapel}</td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border);">${row.jenis_dokumen}${linkHtml}</td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border);">${statusBadge}<br><small style="color:var(--text-muted)">${row.tgl}</small></td>
+          <td style="padding: 10px; border-bottom: 1px solid var(--border);">${actionBtn}</td>
+        `;
+        
+        tbody.innerHTML += `<tr>${cols}</tr>`;
+      });
+      
+    }).api_getPerangkatData();
+  }
+
+  function uploadDokumen(rowIndex) {
+    const url = prompt("Masukkan Link Google Drive untuk dokumen ini:");
+    if (!url) return;
+    
+    document.getElementById('perangkat-loading').style.display = 'block';
+    document.getElementById('perangkat-loading').innerText = "Mengupload...";
+    
+    google.script.run.withSuccessHandler(function(res) {
+      alert(res.message);
+      loadPerangkat();
+    }).api_updatePerangkat({action: 'upload', row_index: rowIndex, link: url});
+  }
+  
+  function verifyDokumen(rowIndex, status) {
+    if(!status) return;
+    document.getElementById('perangkat-loading').style.display = 'block';
+    document.getElementById('perangkat-loading').innerText = "Menyimpan status...";
+    
+    google.script.run.withSuccessHandler(function(res) {
+      alert(res.message);
+      loadPerangkat();
+    }).api_updatePerangkat({action: 'verify', row_index: rowIndex, new_status: status});
+  }
+
+  // Load awal
+  loadPerangkat();
+</script>

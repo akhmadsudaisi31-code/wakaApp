@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistem Waka Kurikulum SMK</title>
+  <meta name="description" content="Sistem Digital Waka Kurikulum SMK — E-Jurnal Harian, Absensi Wajah, Dashboard Analisis & Manajemen Perangkat Ajar.">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Waka Kurikulum">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client"></script>
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-brand">
+          <div class="login-brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+          <h1 class="login-brand-name">Waka Kurikulum</h1>
+        </div>
+        <p class="login-tagline">Sistem Digital Manajemen Kurikulum SMK</p>
+      </div>
+
+      <div class="login-divider">
+        <span>Masuk Sistem</span>
+      </div>
+
+      <!-- Container untuk Google Sign-In Button Native -->
+      <div id="google-login-container" style="display: flex; justify-content: center; width: 100%; margin-top: 20px;"></div>
+
+      <p class="login-note">
+        <i class="fa-solid fa-lock"></i>
+        <span>Hanya akun yang terdaftar oleh Waka Kurikulum yang dapat masuk.</span>
+      </p>
+
+      <!-- DEV MODE: Quick Login (hanya tampil saat CONFIG.DEV_MODE = true) -->
+      <div id="dev-login-panel" style="display:none;">
+        <div class="dev-panel-label">🛠️ DEV MODE — Pilih Role:</div>
+        <div class="dev-role-grid">
+          <button class="dev-role-btn guru" onclick="App.devLogin('guru')">Guru</button>
+          <button class="dev-role-btn waka" onclick="App.devLogin('waka')">Waka</button>
+          <button class="dev-role-btn kepsek" onclick="App.devLogin('kepsek')">Kepsek</button>
+        </div>
+      </div>
+
+      <div id="login-error-msg" style="display:none;" class="login-error">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="login-error-text"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== APP SHELL ==================== -->
+  <div id="app-shell" class="app-shell hidden">
+
+    <!-- Side / Bottom Navigation -->
+    <nav id="app-nav" class="app-nav">
+      <div class="nav-brand">
+        <div class="nav-brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div>
+          <div class="nav-brand-name">Waka Kurikulum</div>
+          <div class="nav-brand-sub">Sistem Manajemen</div>
+        </div>
+      </div>
+      <div class="nav-section-label">Menu Utama</div>
+      <div id="nav-items" class="nav-items"></div>
+      <div class="nav-footer">
+        <div class="nav-user" id="nav-user-info"></div>
+        <button id="btn-logout" class="btn-logout" onclick="App.logout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Keluar</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile Top Bar -->
+    <header class="mobile-header">
+      <div class="mobile-header-left">
+        <!-- Hamburger button untuk buka sidebar -->
+        <button class="hamburger-btn" id="btn-hamburger" onclick="App.toggleSidebar()" aria-label="Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="mobile-logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <span id="mobile-page-title">Beranda</span>
+      </div>
+      <div id="mobile-user-avatar" class="mobile-user-avatar"></div>
+    </header>
+
+    <!-- Overlay backdrop untuk sidebar mobile -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="App.toggleSidebar()"></div>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="main-content">
+      <div id="page-container" class="page-container"></div>
+    </main>
+
+    <!-- Mobile Bottom Nav -->
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav"></nav>
+  </div>
+
+  <!-- ==================== LOADING OVERLAY ==================== -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner">
+      <div class="spinner-ring"></div>
+      <p id="loading-text">Memuat...</p>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION ==================== -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ==================== SCRIPTS ==================== -->
+  <script src="js/config.js"></script>
+  <script src="js/mock_api.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/pages/dashboard.js"></script>
+  <script src="js/pages/ejurnal.js"></script>
+  <script src="js/pages/absen.js"></script>
+  <script src="js/pages/jadwal.js"></script>
+  <script src="js/pages/perangkat.js"></script>
+  <script src="js/pages/pkl.js"></script>
+  <script src="js/pages/supervisi.js"></script>
+  <script src="js/pages/master.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

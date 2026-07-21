@@ -1,0 +1,65 @@
+<div class="card">
+  <h3><i class="fa-regular fa-calendar-check" style="color:var(--primary-light);"></i> Jadwal Mengajar Saya</h3>
+  <p id="jadwal-loading">Memuat jadwal...</p>
+  
+  <div id="jadwal-content" style="display:none; overflow-x: auto;">
+    <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;" id="table-jadwal">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border); text-align: left; background: var(--background);">
+          <th style="padding: 10px;">Hari</th>
+          <th style="padding: 10px;">Jam Ke-</th>
+          <th style="padding: 10px;">Kelas</th>
+          <th style="padding: 10px;">Mata Pelajaran</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-jadwal">
+        <!-- Render via JS -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function loadJadwalSaya() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(!res.success) {
+        document.getElementById('jadwal-loading').innerText = "Gagal memuat jadwal: " + res.message;
+        return;
+      }
+      
+      document.getElementById('jadwal-loading').style.display = 'none';
+      document.getElementById('jadwal-content').style.display = 'block';
+      
+      const tbody = document.getElementById('tbody-jadwal');
+      tbody.innerHTML = '';
+      
+      if(res.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:15px;">Anda belum memiliki jadwal mengajar terdaftar.</td></tr>';
+        return;
+      }
+      
+      let currHari = "";
+      res.data.forEach(row => {
+        // Beri warna latar berbeda untuk memisahkan hari
+        let bg = "";
+        if (currHari !== row.hari) {
+          currHari = row.hari;
+          bg = "background: #f8f9fa;"; // abu-abu tipis untuk pergantian hari
+        }
+        
+        tbody.innerHTML += `
+          <tr style="border-bottom: 1px solid var(--border); ${bg}">
+            <td style="padding: 10px; font-weight:bold;">${row.hari}</td>
+            <td style="padding: 10px;">${row.jam_ke}</td>
+            <td style="padding: 10px;"><span style="background:var(--primary); color:white; padding:3px 6px; border-radius:4px; font-size:0.8rem;">${row.kelas}</span></td>
+            <td style="padding: 10px;">${row.mapel}</td>
+          </tr>
+        `;
+      });
+      
+    }).api_getJadwalSaya();
+  }
+
+  // Load awal
+  loadJadwalSaya();
+</script>

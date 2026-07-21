@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistem Waka Kurikulum</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kurikulum">
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135810.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135810.png">
+
+    <!-- Dynamic Manifest PWA -->
+    <link rel="manifest" id="pwa-manifest">
+    <script>
+      const manifestJSON = {
+        "name": "Sistem Waka Kurikulum",
+        "short_name": "Kurikulum",
+        "start_url": window.location.href,
+        "display": "standalone",
+        "background_color": "#f8f9fa",
+        "theme_color": "#4f46e5",
+        "icons": [{
+          "src": "https://cdn-icons-png.flaticon.com/512/3135/3135810.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }]
+      };
+      const blob = new Blob([JSON.stringify(manifestJSON)], {type: 'application/json'});
+      document.getElementById('pwa-manifest').setAttribute('href', URL.createObjectURL(blob));
+    </script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      :root {
+        --primary: #1E3A8A; /* Corporate Blue */
+        --primary-light: #3B82F6;
+        --surface: #FFFFFF;
+        --background: #F1F5F9;
+        --text-main: #0F172A;
+        --text-muted: #64748B;
+        --border: #E2E8F0;
+        --success: #10B981;
+        --danger: #EF4444;
+        --warning: #F59E0B;
+        --nav-height: 65px;
+      }
+
+      * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+      body { margin: 0; background-color: var(--background); color: var(--text-main); padding-bottom: var(--nav-height); }
+      
+      .container { padding: 20px; max-width: 1000px; margin: 0 auto; }
+      
+      .card { 
+        background: var(--surface); 
+        border-radius: 12px; 
+        padding: 24px; 
+        margin-bottom: 24px; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+        border: 1px solid var(--border);
+      }
+      
+      .card h3 { margin-top: 0; color: var(--primary); font-weight: 600; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;}
+
+      /* Tab Content Logic */
+      .tab-content { display: none; animation: fadeIn 0.3s ease; }
+      .tab-content.active { display: block; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+      /* Bottom Navigation */
+      .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--nav-height);
+        background: var(--surface);
+        display: flex;
+        overflow-x: auto; /* Bisa digeser jika kebanyakan tab */
+        white-space: nowrap;
+        justify-content: flex-start;
+        align-items: center;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        z-index: 1000;
+        padding-bottom: env(safe-area-inset-bottom);
+        -webkit-overflow-scrolling: touch; /* Smooth scroll di iOS */
+      }
+      
+      /* Sembunyikan scrollbar bawah agar rapi */
+      .bottom-nav::-webkit-scrollbar { display: none; }
+      
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        text-decoration: none;
+        min-width: 75px; /* Lebar minimum per tab agar tidak menyusut */
+        height: 100%;
+        cursor: pointer;
+        transition: color 0.2s;
+        flex-shrink: 0;
+      }
+      .nav-item i { font-size: 1.2rem; margin-bottom: 4px; }
+      .nav-item span { font-size: 0.75rem; font-weight: 500; }
+      
+      .nav-item.active { color: var(--primary-light); }
+      
+      /* Desktop enhancements */
+      @media (min-width: 768px) {
+        body { padding-bottom: 0; padding-left: 250px; }
+        .bottom-nav {
+          top: 0; bottom: auto; left: 0; width: 250px; height: 100vh;
+          flex-direction: column; justify-content: flex-start; padding-top: 80px;
+          border-right: 1px solid var(--border);
+        }
+        .nav-item { height: auto; padding: 20px 0; flex-direction: row; justify-content: flex-start; padding-left: 30px; border-left: 4px solid transparent;}
+        .nav-item i { margin-right: 15px; margin-bottom: 0; font-size: 1.2rem; width: 24px; text-align:center; }
+        .nav-item span { font-size: 1rem; }
+        .nav-item.active { background: #eff6ff; border-left-color: var(--primary-light); }
+      }
+      
+      /* Form UI Enhancements */
+      input, select, textarea { 
+        border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; 
+        transition: border-color 0.2s; font-family: 'Inter', sans-serif;
+      }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+      label { font-weight: 500; color: var(--text-main); font-size: 0.9rem; margin-bottom: 6px; display: inline-block;}
+      .btn-primary { background: var(--primary-light); color: white; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+      .btn-primary:hover { background: var(--primary); }
+    </style>
+  </head>
+  <body>
+    <?!= include('html/partials/Header', {user: user}) ?>
+    
+    <div class="container">
+      <div id="view-home" class="tab-content active">
+        <div class="card">
+          <h3 style="border:none; margin:0; padding:0; color:var(--text-main);"><i class="fa-solid fa-hand-wave" style="color:var(--warning);"></i> Selamat Datang, <?= user.nama ?>!</h3>
+          <p style="color:var(--text-muted); margin-top:10px;">Akses saat ini: <strong style="color:var(--primary);"><?= user.role.toUpperCase() ?></strong></p>
+        </div>
+        
+        <?!= include('html/Dashboard_View', {user: user}) ?>
+      </div>
+
+      <div id="view-jurnal" class="tab-content">
+        <? if (user.role === 'guru' || user.role === 'waka') { ?>
+          <?!= include('html/EJurnal_Form', {user: user}) ?>
+        <? } else { ?>
+          <div class="card"><p>Anda tidak memiliki akses ke fitur ini.</p></div>
+        <? } ?>
+      </div>
+      
+      <div id="view-jadwal" class="tab-content">
+        <? if (user.role === 'guru' || user.role === 'waka') { ?>
+          <?!= include('html/Jadwal_View', {user: user}) ?>
+        <? } ?>
+      </div>
+      
+      <div id="view-perangkat" class="tab-content">
+        <?!= include('html/Perangkat_View', {user: user}) ?>
+      </div>
+
+      <div id="view-pkl" class="tab-content">
+        <?!= include('html/PKL_View', {user: user}) ?>
+      </div>
+
+      <div id="view-supervisi" class="tab-content">
+        <? if (user.role === 'waka' || user.role === 'kepsek') { ?>
+          <?!= include('html/Supervisi_View', {user: user}) ?>
+        <? } else { ?>
+          <div class="card"><p>Hanya Waka/Kepsek yang dapat mengakses Supervisi.</p></div>
+        <? } ?>
+      </div>
+      
+      <div id="view-master" class="tab-content">
+        <? if (user.role === 'waka' || user.role === 'kepsek') { ?>
+          <?!= include('html/MasterData_View', {user: user}) ?>
+        <? } else { ?>
+          <div class="card"><p>Akses Ditolak.</p></div>
+        <? } ?>
+      </div>
+      
+      <div id="view-absen" class="tab-content">
+        <?!= include('html/Absen_View', {user: user}) ?>
+      </div>
+    </div>
+
+    <!-- Bottom/Side Navigation -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" onclick="switchTab('home', this)">
+        <i class="fa-solid fa-house"></i>
+        <span>Beranda</span>
+      </div>
+      <? if (user.role === 'guru' || user.role === 'waka') { ?>
+      <div class="nav-item" onclick="switchTab('jadwal', this)">
+        <i class="fa-regular fa-calendar-check"></i>
+        <span>Jadwal</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('jurnal', this)">
+        <i class="fa-solid fa-book-open"></i>
+        <span>E-Jurnal</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('absen', this); triggerAbsenLoad();">
+        <i class="fa-solid fa-camera-retro"></i>
+        <span>Absen</span>
+      </div>
+      <? } ?>
+      <div class="nav-item" onclick="switchTab('perangkat', this)">
+        <i class="fa-solid fa-folder-open"></i>
+        <span>Perangkat</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('pkl', this)">
+        <i class="fa-solid fa-briefcase"></i>
+        <span>PKL</span>
+      </div>
+      <? if (user.role === 'waka' || user.role === 'kepsek') { ?>
+      <div class="nav-item" onclick="switchTab('supervisi', this)">
+        <i class="fa-solid fa-clipboard-check"></i>
+        <span>Supervisi</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('master', this); triggerMasterDataLoad();">
+        <i class="fa-solid fa-database"></i>
+        <span>Data Master</span>
+      </div>
+      <? } ?>
+    </nav>
+
+    <script>
+      function switchTab(tabId, el) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        // Deactivate all nav items
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        
+        // Show target tab & activate nav
+        document.getElementById('view-' + tabId).classList.add('active');
+        el.classList.add('active');
+        window.scrollTo(0, 0);
+      }
+    </script>
+  </body>
+</html>

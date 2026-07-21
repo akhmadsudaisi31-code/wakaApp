@@ -1,0 +1,140 @@
+<div class="card" style="text-align: center;">
+  <h3><i class="fa-solid fa-camera-retro" style="color:var(--primary-light);"></i> Absensi Wajah (Selfie)</h3>
+  <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Arahkan wajah Anda ke kamera untuk bukti kehadiran.</p>
+  
+  <div style="margin: 0 auto; max-width: 320px; position: relative;">
+    <!-- Mode 1: Live Video (In-App) -->
+    <div id="video-container" style="display: none; border-radius: 8px; overflow: hidden; background: #000; position: relative; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+      <video id="absen-video" autoplay playsinline style="width: 100%; display: block;"></video>
+      <canvas id="absen-canvas" style="display:none;"></canvas>
+    </div>
+
+    <!-- Mode 2: Fallback Image Preview (Native Camera) -->
+    <div id="fallback-container" style="display: none;">
+      <div id="absen-preview-container" style="width: 100%; height: 240px; border-radius: 8px; background: #e9ecef; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; color: #6c757d; font-size: 0.9rem; overflow: hidden;">
+        <span id="absen-preview-text">Belum Ada Foto</span>
+        <img id="absen-preview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+      </div>
+      <input type="file" id="absen-file" accept="image/*" capture="user" style="display:none" onchange="previewFoto(event)">
+      <button type="button" id="btn-fallback-cam" onclick="document.getElementById('absen-file').click()" class="btn-primary" style="padding: 10px 15px; border:none; border-radius:6px; cursor:pointer; width: 100%; margin-bottom: 15px; background: var(--primary);">
+        <i class="fa-solid fa-camera"></i> Buka Kamera Alternatif
+      </button>
+      <p style="font-size: 0.75rem; color: #dc3545;">*Live Kamera otomatis ditolak oleh browser Anda. Kami mengalihkan ke mode kamera alternatif.</p>
+    </div>
+  </div>
+  
+  <div style="display: flex; gap: 10px; justify-content: center;">
+    <button onclick="takeAbsen('Masuk')" class="btn-primary" style="flex:1; padding: 12px; border:none; border-radius:6px; cursor:pointer; background:#28a745;"><i class="fa-solid fa-right-to-bracket"></i> Absen Datang</button>
+    <button onclick="takeAbsen('Pulang')" class="btn-primary" style="flex:1; padding: 12px; border:none; border-radius:6px; cursor:pointer; background:#dc3545;"><i class="fa-solid fa-house-user"></i> Absen Pulang</button>
+  </div>
+  
+  <p id="absen-status" style="margin-top: 15px; font-weight: 500; font-size: 0.9rem;"></p>
+</div>
+
+<script>
+  let videoEl = document.getElementById('absen-video');
+  let canvasEl = document.getElementById('absen-canvas');
+  let stream = null;
+  let useFallback = false;
+  let base64FotoFallback = null;
+
+  function initCamera() {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+      .then(function(s) {
+        stream = s;
+        videoEl.srcObject = stream;
+        document.getElementById('video-container').style.display = 'block';
+        useFallback = false;
+      })
+      .catch(function(err) {
+        console.warn("Live camera blocked:", err);
+        activateFallback();
+      });
+    } else {
+      activateFallback();
+    }
+  }
+
+  function activateFallback() {
+    useFallback = true;
+    document.getElementById('video-container').style.display = 'none';
+    document.getElementById('fallback-container').style.display = 'block';
+  }
+
+  function previewFoto(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('absen-preview').src = e.target.result;
+        document.getElementById('absen-preview').style.display = "block";
+        document.getElementById('absen-preview-text').style.display = "none";
+        base64FotoFallback = e.target.result;
+        document.getElementById('absen-status').innerText = "Foto siap dikirim!";
+        document.getElementById('absen-status').style.color = "var(--primary)";
+      }
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function takeAbsen(jenis) {
+    let finalBase64 = null;
+
+    if (useFallback) {
+      if (!base64FotoFallback) {
+        alert("Silakan ambil foto selfie terlebih dahulu!");
+        return;
+      }
+      finalBase64 = base64FotoFallback;
+    } else {
+      if (!stream) {
+        alert("Kamera masih memuat...");
+        return;
+      }
+      // Snap dari live video
+      canvasEl.width = videoEl.videoWidth;
+      canvasEl.height = videoEl.videoHeight;
+      const ctx = canvasEl.getContext('2d');
+      ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+      finalBase64 = canvasEl.toDataURL('image/jpeg', 0.8);
+    }
+    
+    const stat = document.getElementById('absen-status');
+    stat.innerText = `Memproses absen ${jenis}... (Memakan waktu beberapa detik)`;
+    stat.style.color = "var(--text-main)";
+    
+    const payload = {
+      jenis: jenis,
+      foto: finalBase64
+    };
+    
+    google.script.run.withSuccessHandler(function(res) {
+      if(res.success) {
+        stat.innerText = `Absen ${jenis} berhasil dicatat!`;
+        stat.style.color = "#28a745";
+        alert(`Absen ${jenis} sukses! Data dan foto telah disimpan di sistem.`);
+        
+        // Reset jika pakai fallback
+        if (useFallback) {
+          base64FotoFallback = null;
+          document.getElementById('absen-preview').src = "";
+          document.getElementById('absen-preview').style.display = "none";
+          document.getElementById('absen-preview-text').style.display = "block";
+          document.getElementById('absen-file').value = "";
+        }
+      } else {
+        stat.innerText = "Gagal: " + res.message;
+        stat.style.color = "red";
+      }
+    }).api_submitAbsen(payload);
+  }
+  
+  let cameraInitialized = false;
+  function triggerAbsenLoad() {
+    if (!cameraInitialized) {
+      initCamera();
+      cameraInitialized = true;
+    }
+  }
+</script>

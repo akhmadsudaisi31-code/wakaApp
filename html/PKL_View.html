@@ -1,0 +1,52 @@
+<div class="card">
+  <h3><i class="fa-solid fa-briefcase" style="color:var(--primary-light);"></i> Manajemen PKL</h3>
+  <p>Data penempatan PKL dan monitoring sedang dalam tahap sinkronisasi database. Mohon pastikan tabel Master_DUDI, Data_PKL, dan Monitoring_PKL sudah terisi di Google Sheet.</p>
+  
+  <? if (user.role === 'guru') { ?>
+  <div style="background: #e9ecef; padding: 15px; border-radius: 6px; margin-top: 15px;">
+    <h4>Form Monitoring PKL</h4>
+    <form id="form-pkl" onsubmit="event.preventDefault(); submitMonitoringPKL();">
+      <div style="margin-bottom: 10px;">
+        <label>ID Penempatan Siswa</label><br>
+        <input type="text" id="pkl_id_penempatan" required style="width:100%; padding:8px;">
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label>Catatan Perkembangan</label><br>
+        <textarea id="pkl_catatan" required style="width:100%; padding:8px;" rows="4"></textarea>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>Link Foto Kunjungan (G-Drive)</label><br>
+        <input type="url" id="pkl_link_foto" required style="width:100%; padding:8px;">
+      </div>
+      <button type="submit" class="btn-primary" style="padding:10px 15px; border:none; border-radius:6px; cursor:pointer; width:100%;">Kirim Laporan Monitoring</button>
+    </form>
+  </div>
+  <? } ?>
+  
+  <? if (user.role === 'waka') { ?>
+  <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin-top: 15px;">
+    <h4>Rekap Monitoring Waka Kurikulum</h4>
+    <p>Di sini akan tampil daftar siswa yang belum dimonitor oleh guru pembimbing dalam 1 bulan terakhir.</p>
+    <button class="btn-primary" style="padding:5px 10px; border:none; border-radius:4px;" onclick="alert('Fitur Rekap PKL Waka akan segera aktif setelah data terkumpul.')">Lihat Rekapitulasi</button>
+  </div>
+  <? } ?>
+</div>
+
+<script>
+function submitMonitoringPKL() {
+  const payload = {
+    id_pkl: document.getElementById('pkl_id_penempatan').value,
+    catatan: document.getElementById('pkl_catatan').value,
+    link_foto: document.getElementById('pkl_link_foto').value
+  };
+  
+  google.script.run.withSuccessHandler(function(res) {
+    if(res.success) {
+      alert("Laporan monitoring berhasil disimpan!");
+      document.getElementById('form-pkl').reset();
+    } else {
+      alert("Gagal menyimpan: " + res.message);
+    }
+  }).api_submitMonitoringPKL(payload);
+}
+</script>

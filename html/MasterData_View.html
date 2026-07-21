@@ -1,0 +1,180 @@
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3 style="margin:0; border:none; padding:0;"><i class="fa-solid fa-database" style="color:var(--primary-light);"></i> Manajemen Master Data</h3>
+    <button class="btn-primary" onclick="openModal(0)" style="padding: 8px 15px; border:none; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Tambah Data</button>
+  </div>
+  
+  <div style="margin-bottom: 20px;">
+    <label>Pilih Tabel/Database:</label><br>
+    <select id="md-table-select" onchange="loadTableData()" style="padding: 8px; width: 100%; max-width: 300px;">
+      <option value="Master_Guru">Master Guru & Akun</option>
+      <option value="Master_Kelas">Master Kelas</option>
+      <option value="Master_Jadwal">Master Jadwal</option>
+      <option value="Master_ATP">Master ATP</option>
+      <option value="Master_DUDI">Master DUDI (PKL)</option>
+      <option value="Data_PKL">Data Penempatan PKL</option>
+    </select>
+  </div>
+  
+  <p id="md-loading">Memuat tabel...</p>
+  
+  <div style="overflow-x: auto;">
+    <table style="width:100%; border-collapse: collapse; font-size: 0.85rem;" id="md-table">
+      <thead>
+        <tr id="md-thead-tr" style="background: var(--background); text-align: left; border-bottom: 2px solid var(--border);">
+          <!-- Dinamis -->
+        </tr>
+      </thead>
+      <tbody id="md-tbody">
+        <!-- Dinamis -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Form -->
+<div id="md-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div class="card" style="width:90%; max-width:500px; max-height:90vh; overflow-y:auto; margin:0;">
+    <h3 id="md-modal-title">Form Data</h3>
+    <form id="md-form" onsubmit="event.preventDefault(); saveTableData();">
+      <div id="md-form-fields"></div>
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button type="submit" class="btn-primary" style="flex:1; padding:10px; border:none; border-radius:6px; cursor:pointer;">Simpan</button>
+        <button type="button" onclick="closeModal()" style="flex:1; padding:10px; border:1px solid var(--border); background:white; color:var(--text-main); border-radius:6px; cursor:pointer;">Batal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let currentHeaders = [];
+  let currentRowIndex = 0; // 0 means insert
+  let currentRowsData = [];
+  
+  function loadTableData() {
+    const tableName = document.getElementById('md-table-select').value;
+    document.getElementById('md-loading').style.display = 'block';
+    document.getElementById('md-tbody').innerHTML = '';
+    document.getElementById('md-thead-tr').innerHTML = '';
+    
+    google.script.run.withSuccessHandler(function(res) {
+      document.getElementById('md-loading').style.display = 'none';
+      if(!res.success) {
+        alert("Error: " + res.message);
+        return;
+      }
+      
+      currentHeaders = res.headers;
+      currentRowsData = res.rows;
+      
+      // Render Headers
+      let ths = '';
+      currentHeaders.forEach(h => {
+        ths += `<th style="padding:10px;">${h}</th>`;
+      });
+      ths += `<th style="padding:10px;">Aksi</th>`;
+      document.getElementById('md-thead-tr').innerHTML = ths;
+      
+      // Render Rows
+      let trs = '';
+      if(currentRowsData.length === 0) {
+        trs = `<tr><td colspan="${currentHeaders.length + 1}" style="text-align:center; padding:15px;">Belum ada data</td></tr>`;
+      } else {
+        currentRowsData.forEach((r, rIdx) => {
+          let tds = '';
+          r.rowData.forEach(cell => {
+            tds += `<td style="padding:10px; border-bottom:1px solid var(--border);">${cell}</td>`;
+          });
+          
+          let aksi = `
+            <td style="padding:10px; border-bottom:1px solid var(--border); min-width:120px;">
+              <button onclick="openModal(${r.rowIndex}, ${rIdx})" style="background:var(--warning); color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteTableData(${r.rowIndex})" style="background:var(--danger); color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          `;
+          trs += `<tr>${tds}${aksi}</tr>`;
+        });
+      }
+      document.getElementById('md-tbody').innerHTML = trs;
+      
+    }).api_getTableData(tableName);
+  }
+
+  function openModal(rowIndex, dataIdx = null) {
+    currentRowIndex = rowIndex;
+    document.getElementById('md-modal-title').innerText = rowIndex === 0 ? 'Tambah Data Baru' : 'Edit Data';
+    
+    let fieldsHtml = '';
+    currentHeaders.forEach((h, i) => {
+      let val = '';
+      if(rowIndex !== 0 && dataIdx !== null) {
+        val = currentRowsData[dataIdx].rowData[i] || '';
+      }
+      
+      // Deteksi jika tipe boolean
+      let inputHtml = `<input type="text" id="md-field-${i}" value="${val}" style="width:100%; padding:8px;" required>`;
+      
+      if (h.toLowerCase() === 'status_aktif') {
+         let selT = (val===true || val==='true' || val==='TRUE') ? 'selected' : '';
+         let selF = (val===false || val==='false' || val==='FALSE') ? 'selected' : '';
+         inputHtml = `
+           <select id="md-field-${i}" style="width:100%; padding:8px;">
+             <option value="TRUE" ${selT}>Aktif (TRUE)</option>
+             <option value="FALSE" ${selF}>Non-Aktif (FALSE)</option>
+           </select>
+         `;
+      }
+      
+      fieldsHtml += `
+        <div style="margin-bottom: 10px;">
+          <label style="text-transform: capitalize;">${h.replace(/_/g, ' ')}</label><br>
+          ${inputHtml}
+        </div>
+      `;
+    });
+    
+    document.getElementById('md-form-fields').innerHTML = fieldsHtml;
+    document.getElementById('md-modal').style.display = 'flex';
+  }
+  
+  function closeModal() {
+    document.getElementById('md-modal').style.display = 'none';
+  }
+  
+  function saveTableData() {
+    const tableName = document.getElementById('md-table-select').value;
+    const rowArray = [];
+    currentHeaders.forEach((h, i) => {
+      rowArray.push(document.getElementById(`md-field-${i}`).value);
+    });
+    
+    document.getElementById('md-modal').style.display = 'none';
+    document.getElementById('md-loading').style.display = 'block';
+    
+    google.script.run.withSuccessHandler(function(res) {
+      if(!res.success) alert("Error: " + res.message);
+      loadTableData();
+    }).api_saveRow(tableName, currentRowIndex, rowArray);
+  }
+  
+  function deleteTableData(rowIndex) {
+    if(!confirm("Yakin ingin menghapus baris ini?")) return;
+    
+    const tableName = document.getElementById('md-table-select').value;
+    document.getElementById('md-loading').style.display = 'block';
+    
+    google.script.run.withSuccessHandler(function(res) {
+      if(!res.success) alert("Error: " + res.message);
+      loadTableData();
+    }).api_deleteRow(tableName, rowIndex);
+  }
+  
+  // Auto load first time WAKA opens this tab
+  let mdLoaded = false;
+  function triggerMasterDataLoad() {
+    if(!mdLoaded) {
+      loadTableData();
+      mdLoaded = true;
+    }
+  }
+</script>

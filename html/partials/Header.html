@@ -1,0 +1,36 @@
+<header style="background: var(--surface); color: var(--text-main); padding: 15px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 500;">
+  <h2 style="margin: 0; font-size: 1.25rem; color: var(--primary); font-weight: 700; display: flex; align-items: center; gap: 10px;">
+    <i class="fa-solid fa-graduation-cap"></i> Waka Kurikulum
+  </h2>
+  
+  <div style="position: relative;">
+    <div class="user-info" onclick="toggleDropdown()" style="text-align: right; cursor:pointer; display:flex; align-items:center; gap:10px;">
+      <div>
+        <div style="font-weight: 600; font-size: 0.9rem;"><?= user.nama ?></div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);"><?= user.role.toUpperCase() ?></div>
+      </div>
+      <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; color:var(--text-muted);"></i>
+    </div>
+    
+    <div id="account-dropdown" style="display:none; position:absolute; top:100%; right:0; background:white; border:1px solid var(--border); box-shadow:0 4px 10px rgba(0,0,0,0.1); border-radius:6px; min-width:200px; padding:10px; margin-top:10px; z-index:1000;">
+      <div style="border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:10px;">
+        <strong style="font-size:0.9rem;"><?= user.nama ?></strong><br>
+        <small style="color:var(--text-muted);"><?= user.email ?></small>
+      </div>
+      <a href="https://accounts.google.com/Logout" target="_blank" style="display:block; text-align:center; background:var(--danger); color:white; text-decoration:none; padding:8px; border-radius:4px; font-size:0.85rem; font-weight:600;"><i class="fa-solid fa-right-from-bracket"></i> Log Out</a>
+    </div>
+  </div>
+</header>
+<script>
+  function toggleDropdown() {
+    const d = document.getElementById('account-dropdown');
+    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+  }
+  
+  document.addEventListener('click', function(e) {
+    const d = document.getElementById('account-dropdown');
+    if (d && d.style.display === 'block' && !e.target.closest('.user-info') && !e.target.closest('#account-dropdown')) {
+      d.style.display = 'none';
+    }
+  });
+</script>

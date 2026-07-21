@@ -1,0 +1,187 @@
+<div class="card" id="jurnal-container">
+  <h3>Form Jurnal Mengajar Harian</h3>
+  <p id="jurnal-loading">Memuat data jadwal hari ini...</p>
+  
+  <form id="form-jurnal" style="display:none;" onsubmit="handleSubmitJurnal(event)">
+      <!-- Inval Checkbox -->
+      <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; border: 1px solid #ffeeba;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="jur_is_inval" onchange="toggleInval(this.checked)" style="width:18px; height:18px;">
+          <strong style="color:#856404;">Saya adalah Guru Pengganti (Inval)</strong>
+        </label>
+        <p style="margin: 5px 0 0 26px; font-size:0.8rem; color:#856404;">Centang ini jika Anda menggantikan jadwal mengajar guru lain hari ini.</p>
+      </div>
+      
+      <!-- Jadwal Dropdown -->
+      <div style="margin-bottom: 15px;">
+        <label>Pilih Kelas & Mapel (Hari Ini: <span id="jur_hari_ini">-</span>)</label><br>
+        <select id="jur_jadwal" style="width:100%; padding:8px;" required onchange="onJadwalSelect()">
+          <option value="">Memuat jadwal...</option>
+        </select>
+      </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label>Materi Pembelajaran (ATP):</label><br>
+      <select id="jurnal-atp" onchange="handleAtpChange()" style="width:100%; padding: 8px; margin-top:5px;"></select>
+    </div>
+    
+    <div style="margin-bottom: 15px;" id="div-materi-bebas">
+      <label>Materi Lainnya (Jika di luar ATP):</label><br>
+      <input type="text" id="jurnal-materi-bebas" style="width:100%; padding: 8px; margin-top:5px;" placeholder="Tuliskan materi yang diajarkan">
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <div style="flex: 1;">
+        <label>Hadir:</label>
+        <input type="number" id="jurnal-hadir" min="0" required style="width:100%; padding: 8px;">
+      </div>
+      <div style="flex: 1;">
+        <label>Sakit:</label>
+        <input type="number" id="jurnal-sakit" min="0" required style="width:100%; padding: 8px;">
+      </div>
+      <div style="flex: 1;">
+        <label>Izin:</label>
+        <input type="number" id="jurnal-izin" min="0" required style="width:100%; padding: 8px;">
+      </div>
+      <div style="flex: 1;">
+        <label>Alpa:</label>
+        <input type="number" id="jur_alpa" min="0" required style="width:100%; padding: 8px;">
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label>Catatan/Kendala (Opsional):</label><br>
+      <textarea id="jurnal-kendala" rows="3" style="width:100%; padding: 8px; margin-top:5px;"></textarea>
+    </div>
+    
+    <button type="submit" id="btn-submit-jurnal" style="background: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; width: 100%;">Simpan Jurnal</button>
+  </form>
+</div>
+
+<script>
+  let masterData = {};
+  let currentJadwalList = [];
+  let atpData = [];
+
+  function initJurnal() {
+    google.script.run.withSuccessHandler(function(res) {
+      if(!res.success) {
+        document.getElementById('jurnal-loading').innerText = "Gagal memuat data: " + res.message;
+        return;
+      }
+      
+      masterData = res.data;
+      atpData = res.data.atp;
+      
+      document.getElementById('jur_hari_ini').innerText = masterData.hari;
+      document.getElementById('jurnal-loading').style.display = 'none';
+      document.getElementById('form-jurnal').style.display = 'block';
+      
+      // Default: load jadwal sendiri
+      toggleInval(false);
+      
+    }).api_getFormDataJurnal();
+  }
+  
+  initJurnal();
+  
+  function toggleInval(isChecked) {
+    currentJadwalList = isChecked ? masterData.jadwalSemua : masterData.jadwalKu;
+    renderJadwalDropdown(currentJadwalList);
+  }
+  
+  function renderJadwalDropdown(list) {
+    const sel = document.getElementById('jur_jadwal');
+    if(list.length === 0) {
+      sel.innerHTML = '<option value="">-- Tidak ada jadwal hari ini --</option>';
+      return;
+    }
+    
+    sel.innerHTML = '<option value="">-- Pilih Kelas & Mapel --</option>';
+    list.forEach((j, idx) => {
+      // value index untuk mempermudah akses ke data jadwal
+      sel.innerHTML += `<option value="${idx}">Kelas ${j.id_kelas} - ${j.mapel} (Jam ${j.jam_ke})</option>`;
+    });
+  }
+
+  function onJadwalSelect() {
+    const selIdx = document.getElementById('jur_jadwal').value;
+    const selAtp = document.getElementById('jurnal-atp');
+    
+    selAtp.innerHTML = '<option value="">-- Pilih Materi ATP --</option>';
+    document.getElementById('jurnal-materi-bebas').value = '';
+    
+    if (selIdx === "") return;
+    
+    const jadwal = currentJadwalList[selIdx];
+    
+    // Filter ATP berdasarkan mapel jadwal yang dipilih
+    const atpMapel = atpData.filter(a => a.mapel === jadwal.mapel);
+    atpMapel.forEach(a => {
+      selAtp.innerHTML += `<option value="${a.id_atp}">${a.deskripsi}</option>`;
+    });
+    selAtp.innerHTML += `<option value="LAINNYA">Lainnya (Materi di luar ATP)</option>`;
+    
+    handleAtpChange();
+  }
+
+  function handleAtpChange() {
+    const atpVal = document.getElementById('jurnal-atp').value;
+    const divBebas = document.getElementById('div-materi-bebas');
+    const inputBebas = document.getElementById('jurnal-materi-bebas');
+    
+    if (atpVal === "LAINNYA" || atpVal === "") {
+      divBebas.style.display = 'block';
+      if(atpVal === "LAINNYA") inputBebas.setAttribute('required', 'true');
+      else inputBebas.removeAttribute('required');
+    } else {
+      divBebas.style.display = 'none';
+      inputBebas.removeAttribute('required');
+    }
+  }
+
+  function handleSubmitJurnal(e) {
+    e.preventDefault();
+    
+    const selIdx = document.getElementById('jur_jadwal').value;
+    if (selIdx === "") return alert("Pilih jadwal terlebih dahulu!");
+    
+    const jadwal = currentJadwalList[selIdx];
+    let atpVal = document.getElementById('jurnal-atp').value;
+    let materiBebas = document.getElementById('jurnal-materi-bebas').value;
+    
+    if (atpVal === "LAINNYA") {
+      atpVal = "";
+    } else if (atpVal !== "") {
+      materiBebas = "";
+    }
+    
+    const payload = {
+      id_kelas: jadwal.id_kelas,
+      mapel: jadwal.mapel,
+      jam_ke: jadwal.jam_ke,
+      id_atp: atpVal,
+      materi_bebas: materiBebas,
+      jumlah_hadir: document.getElementById('jurnal-hadir').value,
+      jumlah_sakit: document.getElementById('jurnal-sakit').value,
+      jumlah_izin: document.getElementById('jurnal-izin').value,
+      jumlah_alpa: document.getElementById('jur_alpa').value,
+      catatan_kendala: "", // Disimpan untuk antisipasi fitur ke depan
+      isInval: document.getElementById('jur_is_inval').checked
+    };
+    
+    const btn = document.getElementById('btn-submit-jurnal');
+    btn.innerText = "Menyimpan...";
+    btn.disabled = true;
+    
+    google.script.run.withSuccessHandler(function(res) {
+      alert(res.message);
+      btn.innerText = "Simpan Jurnal";
+      btn.disabled = false;
+      if(res.success) {
+        document.getElementById('form-jurnal').reset();
+        handleJadwalChange();
+      }
+    }).api_submitJurnal(payload);
+  }
+</script>

@@ -1,0 +1,115 @@
+<hr style="border: 1px solid #eee; margin: 20px 0;">
+
+<div class="card" id="dashboard-container">
+  <h3>Dashboard Analisis</h3>
+  <p id="dash-loading">Memuat data dashboard...</p>
+  
+  <div id="dash-content" style="display:none;">
+    
+    <!-- Bagian GURU (Statistik Pribadi) -->
+    <? if (user.role === 'guru' || user.role === 'waka') { ?>
+      <div style="background: #e9ecef; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+        <h4 style="margin-top:0;">Performa Anda (7 Hari Terakhir)</h4>
+        <div style="display: flex; gap: 20px; align-items: center;">
+          <div style="font-size: 2rem; font-weight: bold; color: #198754;" id="guru-persen">0%</div>
+          <div>
+            Jurnal Terisi: <b id="guru-masuk">0</b> / <span id="guru-target">0</span> jadwal
+          </div>
+        </div>
+      </div>
+    <? } ?>
+    
+    <!-- Bagian WAKA/KEPSEK (Statistik Global) -->
+    <? if (user.role === 'waka' || user.role === 'kepsek') { ?>
+      <h4 style="margin-top: 20px;">Ringkasan Kepatuhan Sekolah (7 Hari Terakhir)</h4>
+      
+      <div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+        <!-- Card Total -->
+        <div style="background: #e0f8e9; padding: 15px; border-radius: 6px; flex: 1; min-width: 200px;">
+          <h5 style="margin:0 0 10px 0; color: #198754;">Total Kepatuhan</h5>
+          <div style="font-size: 2rem; font-weight: bold; color: #198754;" id="global-persen">0%</div>
+          <div style="font-size: 0.9rem;">(Total <span id="global-masuk">0</span> dari <span id="global-target">0</span> Jurnal)</div>
+        </div>
+        
+        <!-- Tabel Kepatuahan Rendah -->
+        <div style="background: #fff3cd; padding: 15px; border-radius: 6px; flex: 2; min-width: 300px;">
+          <h5 style="margin:0 0 10px 0; color: #856404;">Perhatian: Kepatuhan < 80%</h5>
+          <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid #ffeeba; text-align: left;">
+                <th>Nama Guru</th>
+                <th>Masuk / Target</th>
+                <th>Persentase</th>
+              </tr>
+            </thead>
+            <tbody id="table-kepatuhan-rendah">
+              <!-- Render by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <? } ?>
+    
+  </div>
+</div>
+
+<script>
+  google.script.run.withSuccessHandler(function(res) {
+    if(!res.success) {
+      document.getElementById('dash-loading').innerText = "Gagal memuat dashboard: " + res.message;
+      return;
+    }
+    
+    document.getElementById('dash-loading').style.display = 'none';
+    document.getElementById('dash-content').style.display = 'block';
+    
+    const data = res.data;
+    
+    // Update UI Guru
+    if (data.guruStats) {
+      const g = data.guruStats;
+      document.getElementById('guru-persen').innerText = g.persen + '%';
+      document.getElementById('guru-masuk').innerText = g.jurnalMasuk;
+      document.getElementById('guru-target').innerText = g.targetJurnal;
+      
+      if (g.persen < 80) {
+        document.getElementById('guru-persen').style.color = '#dc3545'; // Merah jika kurang
+      }
+    }
+    
+    // Update UI Waka/Kepsek
+    if (data.globalStats) {
+      const gl = data.globalStats;
+      document.getElementById('global-persen').innerText = gl.persenAll + '%';
+      document.getElementById('global-masuk').innerText = gl.totalJurnalAll;
+      document.getElementById('global-target').innerText = gl.totalTargetAll;
+      
+      if (gl.persenAll < 80) document.getElementById('global-persen').style.color = '#dc3545';
+      
+      const tbody = document.getElementById('table-kepatuhan-rendah');
+      tbody.innerHTML = '';
+      if (gl.kepatuhanRendah.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="padding-top:10px; color:#155724;">Semua guru memiliki kepatuhan yang baik (≥80%) 👍</td></tr>';
+      } else {
+        gl.kepatuhanRendah.forEach(row => {
+          let waBtn = '';
+          if (row.no_wa) {
+             let noWa = String(row.no_wa).replace(/[^0-9]/g, '');
+             if (noWa.startsWith('0')) noWa = '62' + noWa.substring(1);
+             let msg = `Halo Bapak/Ibu ${row.nama}, mohon segera mengisi E-Jurnal Anda untuk minggu ini. Terima kasih.`;
+             waBtn = `<br><a href="https://wa.me/${noWa}?text=${encodeURIComponent(msg)}" target="_blank" style="background:#25D366; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; display:inline-block; margin-top:5px; font-size:0.75rem;"><i class="fa-brands fa-whatsapp"></i> Chat WA</a>`;
+          }
+          
+          tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid #ffeeba;">
+              <td style="padding: 5px 0;">${row.nama} ${waBtn}</td>
+              <td>${row.masuk} / ${row.target}</td>
+              <td style="color: #dc3545; font-weight: bold;">${row.persen}%</td>
+            </tr>
+          `;
+        });
+      }
+    }
+    
+  }).api_getDashboardData();
+</script>

@@ -1,0 +1,41 @@
+<div class="card">
+  <h3><i class="fa-solid fa-clipboard-check" style="color:var(--primary-light);"></i> Supervisi KBM</h3>
+  <p>Silakan isi hasil penilaian supervisi guru di kelas.</p>
+  
+  <div style="background: #e9ecef; padding: 15px; border-radius: 6px; margin-top: 15px;">
+    <form id="form-supervisi" onsubmit="event.preventDefault(); submitSupervisi();">
+      <div style="margin-bottom: 10px;">
+        <label>ID Guru yang Disupervisi</label><br>
+        <input type="text" id="sup_id_guru" required style="width:100%; padding:8px;" placeholder="Contoh: G001">
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label>Nilai Supervisi (1-100)</label><br>
+        <input type="number" id="sup_nilai" required min="1" max="100" style="width:100%; padding:8px;">
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>Catatan/Masukan</label><br>
+        <textarea id="sup_catatan" required style="width:100%; padding:8px;" rows="4"></textarea>
+      </div>
+      <button type="submit" class="btn-primary" style="padding:10px 15px; border:none; border-radius:6px; cursor:pointer; width:100%;">Simpan Nilai Supervisi</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function submitSupervisi() {
+  const payload = {
+    id_guru: document.getElementById('sup_id_guru').value,
+    nilai: document.getElementById('sup_nilai').value,
+    catatan: document.getElementById('sup_catatan').value
+  };
+  
+  google.script.run.withSuccessHandler(function(res) {
+    if(res.success) {
+      alert("Hasil supervisi berhasil disimpan!");
+      document.getElementById('form-supervisi').reset();
+    } else {
+      alert("Gagal menyimpan: " + res.message);
+    }
+  }).api_submitSupervisi(payload);
+}
+</script>
