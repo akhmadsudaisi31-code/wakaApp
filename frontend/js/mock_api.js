@@ -80,6 +80,10 @@ const MockAPI = {
   },
 
   absen: {
+    getStatusHariIni: async () => {
+      await _delay(300);
+      return { success: true, data: { masuk: '07:15 WIB', pulang: null } };
+    },
     getLocations: async () => {
       await _delay(300);
       return {

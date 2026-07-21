@@ -22,6 +22,19 @@ const AbsenPage = (() => {
         <p>Rekam kehadiran Anda dengan foto selfie</p>
       </div>
 
+      <!-- STATUS ABSEN HARI INI -->
+      <div id="absen-history-card" class="card" style="margin-bottom: 16px; max-width: 480px; margin-left: auto; margin-right: auto; padding: 12px; display: flex; justify-content: space-around; background: var(--green-light); border: 1px solid var(--green);">
+        <div style="text-align: center;">
+          <div style="font-size: 0.75rem; color: var(--text-secondary);">Masuk</div>
+          <div id="status-masuk" style="font-weight: bold; font-size: 1.1rem; color: var(--green-dark);"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+        <div style="border-left: 1px solid var(--border);"></div>
+        <div style="text-align: center;">
+          <div style="font-size: 0.75rem; color: var(--text-secondary);">Pulang</div>
+          <div id="status-pulang" style="font-weight: bold; font-size: 1.1rem; color: var(--green-dark);"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+
       <div style="max-width: 480px; margin: 0 auto;">
         <!-- Mode Selector (Hanya Kamera Langsung) -->
         <div class="camera-mode-tabs" style="display: none;">
@@ -101,8 +114,24 @@ const AbsenPage = (() => {
     _videoEl = document.getElementById('absen-video');
     _canvasEl = document.getElementById('absen-canvas');
 
+    // Load status absen
+    _loadStatus();
+
     // Mulai kamera secara otomatis
     _initCamera();
+  }
+
+  async function _loadStatus() {
+    try {
+      const res = await API.absen.getStatusHariIni();
+      if (res.success && res.data) {
+        document.getElementById('status-masuk').innerHTML = res.data.masuk ? `<span style="color:var(--success);">${res.data.masuk}</span>` : '<span style="color:var(--text-muted);">-</span>';
+        document.getElementById('status-pulang').innerHTML = res.data.pulang ? `<span style="color:var(--success);">${res.data.pulang}</span>` : '<span style="color:var(--text-muted);">-</span>';
+      }
+    } catch(e) {
+      document.getElementById('status-masuk').innerText = '-';
+      document.getElementById('status-pulang').innerText = '-';
+    }
   }
 
   // === INISIALISASI KAMERA ===
@@ -260,8 +289,7 @@ const AbsenPage = (() => {
       }
 
       if (allowedLocations.length === 0) {
-        // Jika belum ada lokasi yang disetting, abaikan geofencing
-        return resolve({ success: true, name: 'Bebas (Belum diatur)' });
+        return reject(new Error('Admin belum mengatur titik lokasi GPS untuk absen. Hubungi Waka Kurikulum.'));
       }
       
       _setStatus('Mengecek lokasi Anda...', 'processing');

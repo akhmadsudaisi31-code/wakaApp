@@ -200,18 +200,19 @@ function api_getLokasiAbsen() {
     const data = sheet.getDataRange().getValues();
     const headers = data[0] || [];
     
-    const idxNama = headers.indexOf('nama_lokasi');
-    const idxLat = headers.indexOf('latitude');
-    const idxLng = headers.indexOf('longitude');
-    const idxRad = headers.indexOf('radius');
+    // Gunakan indexOf jika ada, atau fallback ke indeks kolom bawaan
+    const idxNama = headers.indexOf('nama_lokasi') > -1 ? headers.indexOf('nama_lokasi') : 1;
+    const idxLat = headers.indexOf('latitude') > -1 ? headers.indexOf('latitude') : 2;
+    const idxLng = headers.indexOf('longitude') > -1 ? headers.indexOf('longitude') : 3;
+    const idxRad = headers.indexOf('radius') > -1 ? headers.indexOf('radius') : 4;
     
     const locations = [];
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      if (!row[idxNama] || !row[idxLat] || !row[idxLng]) continue;
+      if (!row[idxLat] || !row[idxLng]) continue;
       
       locations.push({
-        name: row[idxNama],
+        name: row[idxNama] || `Lokasi ${i}`,
         lat: parseFloat(row[idxLat]),
         lng: parseFloat(row[idxLng]),
         radius: parseInt(row[idxRad]) || 100 // default radius 100m jika kosong
@@ -219,6 +220,50 @@ function api_getLokasiAbsen() {
     }
     
     return { success: true, data: locations };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Mengecek status absen pengguna hari ini.
+ * Mengembalikan data: { masuk: '07:20 WIB'|null, pulang: '15:30 WIB'|null }
+ */
+function api_getAbsenHariIni() {
+  try {
+    const user = requireRole(['guru', 'waka', 'kepsek']);
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.ABSENSI);
+    
+    if (!sheet) return { success: true, data: { masuk: null, pulang: null } };
+    
+    const now = new Date();
+    const tglStr = Utilities.formatDate(now, 'Asia/Jakarta', 'yyyy-MM-dd');
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const idxTgl = headers.indexOf('tanggal');
+    const idxId = headers.indexOf('id_guru');
+    const idxJenis = headers.indexOf('jenis_absen');
+    const idxWaktu = headers.indexOf('timestamp');
+    
+    let result = { masuk: null, pulang: null };
+    
+    // Cari dari bawah ke atas agar mendapat absen terakhir jika ada double
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][idxTgl] === tglStr && data[i][idxId] === user.id_guru) {
+        const jenis = data[i][idxJenis];
+        const waktu = new Date(data[i][idxWaktu]);
+        const jam = Utilities.formatDate(waktu, 'Asia/Jakarta', 'HH:mm') + ' WIB';
+        
+        if (jenis === 'Masuk' && !result.masuk) result.masuk = jam;
+        if (jenis === 'Pulang' && !result.pulang) result.pulang = jam;
+        
+        if (result.masuk && result.pulang) break;
+      }
+    }
+    
+    return { success: true, data: result };
   } catch (e) {
     return { success: false, message: e.message };
   }
