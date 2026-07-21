@@ -29,18 +29,5 @@ const CONFIG = {
   GOOGLE_CLIENT_ID: "105185834997-4gp2085j4476v1jhkete28lsas20krmf.apps.googleusercontent.com",
 
   NAMA_SEKOLAH: "SMK SURAMADU",
-  APP_VERSION: "2.0.0",
-
-  /**
-   * Pengaturan Geofencing / Pembatasan Lokasi Absen
-   * Absen hanya bisa dilakukan jika jarak user kurang dari radius (dalam meter)
-   */
-  ALLOWED_LOCATIONS: [
-    {
-      name: "Sekolah Induk",
-      lat: -7.03195, // Ganti dengan Latitude sekolah
-      lng: 112.74836, // Ganti dengan Longitude sekolah
-      radius: 100 // Jarak maksimal dalam meter (misal: 100m)
-    }
-  ]
+  APP_VERSION: "2.0.0"
 };

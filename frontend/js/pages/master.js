@@ -65,6 +65,17 @@ const MasterPage = (() => {
         { key: 'deskripsi_materi', label: 'Deskripsi Materi', type: 'text', required: true,  placeholder: 'Pengenalan Aljabar Linear' },
       ]
     },
+    Master_Lokasi: {
+      label: 'Lokasi Absen GPS',
+      icon : 'fa-solid fa-map-location-dot',
+      cols : [
+        { key: 'id_lokasi',   label: 'ID Lokasi', type: 'text',   required: true,  placeholder: 'LOK-01' },
+        { key: 'nama_lokasi', label: 'Nama Lokasi',type: 'text',  required: true,  placeholder: 'Sekolah Induk' },
+        { key: 'latitude',    label: 'Latitude',  type: 'number', required: true,  placeholder: '-7.03195' },
+        { key: 'longitude',   label: 'Longitude', type: 'number', required: true,  placeholder: '112.74836' },
+        { key: 'radius',      label: 'Radius (m)',type: 'number', required: true,  placeholder: '100' },
+      ]
+    },
   };
 
   // ============================================================

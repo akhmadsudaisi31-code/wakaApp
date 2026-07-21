@@ -23,6 +23,7 @@ const API = (() => {
     dashboard.getData        = () => MockAPI.dashboard.getData(role);
     jurnal.getFormData       = () => MockAPI.jurnal.getFormData();
     jurnal.submit            = (p) => MockAPI.jurnal.submit(p);
+    absen.getLocations       = () => MockAPI.absen.getLocations();
     absen.submit             = (p) => MockAPI.absen.submit(p);
     jadwal.getData           = () => MockAPI.jadwal.getData();
     perangkat.getData        = () => MockAPI.perangkat.getData();
@@ -106,6 +107,7 @@ const API = (() => {
 
   // === ABSENSI ===
   const absen = {
+    getLocations: () => call('getLokasiAbsen'),
     submit: (payload) => call('submitAbsen', payload),
   };
 

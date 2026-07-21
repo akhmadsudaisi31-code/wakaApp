@@ -80,6 +80,15 @@ const MockAPI = {
   },
 
   absen: {
+    getLocations: async () => {
+      await _delay(300);
+      return {
+        success: true,
+        data: [
+          { name: "Sekolah Induk (Mock)", lat: -7.03195, lng: 112.74836, radius: 100 }
+        ]
+      };
+    },
     submit: async (payload) => {
       await _delay(1200);
       return { success: true, message: `[DEV] Absen ${payload.jenis} berhasil dicatat! (mock)` };
@@ -193,6 +202,12 @@ const MockAPI = {
             { rowIndex: 2, rowData: ['ATP-PW-01','Pemrograman Web','XI',1,'Pengenalan HTML5 dan CSS3'] },
             { rowIndex: 3, rowData: ['ATP-PW-02','Pemrograman Web','XI',2,'Membuat Layout Responsif'] },
             { rowIndex: 4, rowData: ['ATP-JD-01','Jaringan Dasar','X',1,'Model OSI dan TCP/IP'] },
+          ]
+        },
+        Master_Lokasi: {
+          headers: ['id_lokasi','nama_lokasi','latitude','longitude','radius'],
+          rows: [
+            { rowIndex: 2, rowData: ['LOK-01','Sekolah Induk','-7.03195','112.74836','100'] },
           ]
         },
       };

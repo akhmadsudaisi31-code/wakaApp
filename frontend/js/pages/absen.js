@@ -242,10 +242,26 @@ const AbsenPage = (() => {
     return R * c; // jarak dalam meter
   }
 
-  function _checkLocation() {
-    return new Promise((resolve, reject) => {
+  async function _checkLocation() {
+    return new Promise(async (resolve, reject) => {
       if (!navigator.geolocation) {
         return reject(new Error('Browser Anda tidak mendukung GPS / Geolocation.'));
+      }
+      
+      _setStatus('Mengambil data lokasi yang diizinkan...', 'processing');
+      let allowedLocations = [];
+      try {
+        const res = await API.absen.getLocations();
+        if (res.success && res.data) {
+          allowedLocations = res.data;
+        }
+      } catch(e) {
+        // Abaikan error api, jika gagal anggap array kosong
+      }
+
+      if (allowedLocations.length === 0) {
+        // Jika belum ada lokasi yang disetting, abaikan geofencing
+        return resolve({ success: true, name: 'Bebas (Belum diatur)' });
       }
       
       _setStatus('Mengecek lokasi Anda...', 'processing');
@@ -259,7 +275,7 @@ const AbsenPage = (() => {
           let allowedLocationName = '';
           let nearestDistance = Infinity;
 
-          for (const loc of CONFIG.ALLOWED_LOCATIONS) {
+          for (const loc of allowedLocations) {
             const dist = _getDistance(userLat, userLng, loc.lat, loc.lng);
             if (dist < nearestDistance) nearestDistance = dist;
             
@@ -295,10 +311,8 @@ const AbsenPage = (() => {
     btnMasuk.disabled = btnPulang.disabled = true;
 
     try {
-      // 1. Cek Lokasi Dulu (Geofencing)
-      if (CONFIG.ALLOWED_LOCATIONS && CONFIG.ALLOWED_LOCATIONS.length > 0) {
-        await _checkLocation();
-      }
+      // 1. Cek Lokasi Dulu (Geofencing) - selalu dipanggil, nanti resolve otomatis jika data kosong
+      await _checkLocation();
 
       // 2. Ambil Foto
       let finalBase64 = null;

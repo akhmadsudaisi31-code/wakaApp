@@ -10,6 +10,19 @@
  */
 
 /**
+ * TEST: Jalankan fungsi ini dari GAS Editor untuk mengotorisasi Drive scope.
+ * Cukup sekali saja — setelah izin diberikan, hapus atau biarkan fungsi ini.
+ */
+function testDriveAccess() {
+  try {
+    const folders = DriveApp.getFoldersByName('Absensi_Guru');
+    Logger.log('✅ Drive OK! Akses DriveApp berhasil diotorisasi.');
+  } catch (e) {
+    Logger.log('❌ Error: ' + e.message);
+  }
+}
+
+/**
  * Mendapatkan atau membuat folder Drive untuk guru tertentu.
  * Struktur: Root Drive → "Absensi_Guru" → "{nama_guru}"
  *
@@ -166,7 +179,47 @@ function api_submitAbsen(payload) {
     };
 
   } catch (e) {
-    Logger.log('Error api_submitAbsen: ' + e.message + '\n' + e.stack);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Mengambil daftar lokasi yang diizinkan untuk absen dari tabel Master_Lokasi.
+ * Dapat diakses oleh semua role (guru, waka, kepsek).
+ * Kolom tabel: id_lokasi, nama_lokasi, latitude, longitude, radius
+ */
+function api_getLokasiAbsen() {
+  try {
+    requireRole(['guru', 'waka', 'kepsek']);
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Master_Lokasi');
+    
+    // Jika tabel belum dibuat, kembalikan lokasi kosong
+    if (!sheet) return { success: true, data: [] };
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0] || [];
+    
+    const idxNama = headers.indexOf('nama_lokasi');
+    const idxLat = headers.indexOf('latitude');
+    const idxLng = headers.indexOf('longitude');
+    const idxRad = headers.indexOf('radius');
+    
+    const locations = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[idxNama] || !row[idxLat] || !row[idxLng]) continue;
+      
+      locations.push({
+        name: row[idxNama],
+        lat: parseFloat(row[idxLat]),
+        lng: parseFloat(row[idxLng]),
+        radius: parseInt(row[idxRad]) || 100 // default radius 100m jika kosong
+      });
+    }
+    
+    return { success: true, data: locations };
+  } catch (e) {
     return { success: false, message: e.message };
   }
 }
