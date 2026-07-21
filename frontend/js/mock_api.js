@@ -160,20 +160,52 @@ const MockAPI = {
   },
 
   master: {
-    getTableData: async (tableName) => ({
-      success: true,
-      data: tableName === 'Master_Guru' ? [
-        ['G001', 'Budi Santoso', 'dev.guru@smkbisahebat.sch.id', '08111'],
-        ['W001', 'Siti Rahayu', 'dev.waka@smkbisahebat.sch.id', '08222']
-      ] : []
-    }),
-    saveRow: async (payload) => {
-      await _delay(500);
-      return { success: true, message: '[DEV] Baris master disimpan! (mock)' };
+    getTableData: async (tableName) => {
+      await _delay(400);
+      const tables = {
+        Master_Guru: {
+          headers: ['id_guru','nama','email','role','mapel_diampu','status_aktif'],
+          rows: [
+            { rowIndex: 2, rowData: ['G001','Budi Santoso, S.Pd','budi@gmail.com','guru','Pemrograman Web','TRUE'] },
+            { rowIndex: 3, rowData: ['W001','Siti Rahayu, M.Pd','siti@gmail.com','waka','Matematika','TRUE'] },
+            { rowIndex: 4, rowData: ['K001','Agus Kurniawan, M.Pd','agus@gmail.com','kepsek','-','TRUE'] },
+          ]
+        },
+        Master_Kelas: {
+          headers: ['id_kelas','tingkat','jurusan','wali_kelas'],
+          rows: [
+            { rowIndex: 2, rowData: ['X-TKJ-1','X','Teknik Komputer Jaringan','G001'] },
+            { rowIndex: 3, rowData: ['XI-RPL-1','XI','Rekayasa Perangkat Lunak','G002'] },
+            { rowIndex: 4, rowData: ['XII-MM-1','XII','Multimedia','G003'] },
+          ]
+        },
+        Master_Jadwal: {
+          headers: ['id_jadwal','id_guru','id_kelas','mapel','hari','jam_ke','tahun_ajaran','semester'],
+          rows: [
+            { rowIndex: 2, rowData: ['JDW-G001-X-TKJ-1-Senin-1','G001','X-TKJ-1','Jaringan Dasar','Senin',1,'2026/2027','Ganjil'] },
+            { rowIndex: 3, rowData: ['JDW-G001-XI-RPL-1-Selasa-3','G001','XI-RPL-1','Pemrograman Web','Selasa',3,'2026/2027','Ganjil'] },
+            { rowIndex: 4, rowData: ['JDW-W001-XII-MM-1-Rabu-2','W001','XII-MM-1','Matematika','Rabu',2,'2026/2027','Ganjil'] },
+          ]
+        },
+        Master_ATP: {
+          headers: ['id_atp','mapel','kelas_tingkat','urutan','deskripsi_materi'],
+          rows: [
+            { rowIndex: 2, rowData: ['ATP-PW-01','Pemrograman Web','XI',1,'Pengenalan HTML5 dan CSS3'] },
+            { rowIndex: 3, rowData: ['ATP-PW-02','Pemrograman Web','XI',2,'Membuat Layout Responsif'] },
+            { rowIndex: 4, rowData: ['ATP-JD-01','Jaringan Dasar','X',1,'Model OSI dan TCP/IP'] },
+          ]
+        },
+      };
+      const result = tables[tableName] || { headers: [], rows: [] };
+      return { success: true, headers: result.headers, rows: result.rows };
     },
-    deleteRow: async (payload) => {
+    saveRow: async (tableName, rowIndex, rowArray) => {
       await _delay(500);
-      return { success: true, message: '[DEV] Baris master dihapus! (mock)' };
+      return { success: true, message: rowIndex === 0 ? '[DEV] Data berhasil ditambahkan! (mock)' : '[DEV] Data berhasil diupdate! (mock)' };
+    },
+    deleteRow: async (tableName, rowIndex) => {
+      await _delay(500);
+      return { success: true, message: '[DEV] Data berhasil dihapus! (mock)' };
     }
   },
 
