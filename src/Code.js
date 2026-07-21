@@ -149,6 +149,12 @@ function doPost(e) {
       case 'submitAbsen':
         return _jsonResponse(api_submitAbsen(payload));
 
+      case 'getLokasiAbsen':
+        return _jsonResponse(api_getLokasiAbsen());
+
+      case 'getAbsenHariIni':
+        return _jsonResponse(api_getAbsenHariIni());
+
       case 'getJadwal':
         return _jsonResponse(_api_getJadwal());
 

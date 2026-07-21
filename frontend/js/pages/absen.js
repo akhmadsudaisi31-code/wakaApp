@@ -127,10 +127,12 @@ const AbsenPage = (() => {
       if (res.success && res.data) {
         document.getElementById('status-masuk').innerHTML = res.data.masuk ? `<span style="color:var(--success);">${res.data.masuk}</span>` : '<span style="color:var(--text-muted);">-</span>';
         document.getElementById('status-pulang').innerHTML = res.data.pulang ? `<span style="color:var(--success);">${res.data.pulang}</span>` : '<span style="color:var(--text-muted);">-</span>';
+      } else {
+        throw new Error(res.message || "Gagal mengambil data absen");
       }
     } catch(e) {
-      document.getElementById('status-masuk').innerText = '-';
-      document.getElementById('status-pulang').innerText = '-';
+      document.getElementById('status-masuk').innerHTML = '<span style="color:var(--text-muted);">-</span>';
+      document.getElementById('status-pulang').innerHTML = '<span style="color:var(--text-muted);">-</span>';
     }
   }
 
