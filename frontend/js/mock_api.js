@@ -106,7 +106,11 @@ const MockAPI = {
           { id_guru: 'G002', id_kelas: 'XI-RPL-2', mapel: 'Matematika',      hari: 'Rabu',   jam_ke: 1 },
         ]
       }
-    })
+    }),
+    save: async (payload) => {
+      await _delay(600);
+      return { success: true, message: `[DEV] Jadwal ${payload.id_kelas} - ${payload.mapel} (${payload.hari} Jam ${payload.jam_ke}) berhasil disimpan! (mock)` };
+    }
   },
 
   perangkat: {

@@ -86,6 +86,7 @@ const API = (() => {
   // === JADWAL ===
   const jadwal = {
     getData: () => call('getJadwal', {}),
+    save   : (payload) => call('saveJadwal', payload),
   };
 
   // === PERANGKAT AJAR ===

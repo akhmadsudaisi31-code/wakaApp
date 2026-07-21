@@ -31,11 +31,15 @@ const App = (() => {
     jadwal:    { label: 'Jadwal',       icon: 'fa-regular fa-calendar-check', module: JadwalPage    },
     jurnal:    { label: 'E-Jurnal',     icon: 'fa-solid fa-book-open',        module: EJurnalPage   },
     absen:     { label: 'Absensi',      icon: 'fa-solid fa-camera-retro',     module: AbsenPage     },
-    perangkat: { label: 'Perangkat',    icon: 'fa-solid fa-folder-open',      module: PerangkatPage },
-    pkl:       { label: 'Jurnal PKL',   icon: 'fa-solid fa-briefcase',        module: PKLPage       },
-    supervisi: { label: 'Supervisi',    icon: 'fa-solid fa-clipboard-check',  module: SupervisiPage },
-    master:    { label: 'Data Master',  icon: 'fa-solid fa-database',         module: MasterPage    },
+    perangkat: { label: 'Perangkat',    icon: 'fa-solid fa-folder-open',      module: PerangkatPage, locked: true },
+    pkl:       { label: 'Jurnal PKL',   icon: 'fa-solid fa-briefcase',        module: PKLPage,       locked: true },
+    supervisi: { label: 'Supervisi',    icon: 'fa-solid fa-clipboard-check',  module: SupervisiPage, locked: true },
+    master:    { label: 'Data Master',  icon: 'fa-solid fa-database',         module: MasterPage,    locked: true },
   };
+
+  // PIN untuk menu terkunci (ubah sesuai kebutuhan)
+  const PIN_CODE    = '0000';
+  let   _pinUnlocked = false; // Reset setiap login baru
 
   // === INIT ===
   function init() {
@@ -164,8 +168,9 @@ const App = (() => {
     if (!confirm('Yakin ingin keluar?')) return;
     sessionStorage.removeItem(SESSION_KEY);
     API.setToken(null);
-    _user = null;
+    _user        = null;
     _currentPage = null;
+    _pinUnlocked = false; // Reset PIN saat logout
 
     document.getElementById('app-shell').classList.add('hidden');
     document.getElementById('login-screen').style.display = 'flex';
@@ -237,7 +242,110 @@ const App = (() => {
     const meta = PAGE_META[pageId];
     if (!meta) return;
 
-    if (_currentPage?.destroy) _currentPage.destroy();
+    // Cek PIN untuk halaman terkunci
+    if (meta.locked && !_pinUnlocked) {
+      _showPinModal(pageId);
+      return;
+    }
+
+    _doNavigate(pageId, meta);
+  }
+
+  // === PIN MODAL ===
+  function _showPinModal(pageId) {
+    // Hapus modal lama jika ada
+    document.getElementById('pin-modal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'pin-modal';
+    modal.style.cssText = `
+      position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,0.55); backdrop-filter:blur(3px);
+      display:flex; align-items:center; justify-content:center; padding:24px;
+    `;
+    modal.innerHTML = `
+      <div style="background:var(--white); border-radius:12px; padding:28px 24px; width:100%; max-width:320px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="width:48px;height:48px;background:var(--green-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <i class="fa-solid fa-lock" style="color:var(--green);font-size:20px;"></i>
+        </div>
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:4px;">Menu Terkunci</h3>
+        <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:20px;">Masukkan PIN untuk mengakses menu ini</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;" id="pin-dots">
+          ${[0,1,2,3].map(i => `<div id="pin-dot-${i}" style="width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all 0.15s;"></div>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+          ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k => `
+            <button onclick="App._pinKey('${k}')" style="
+              padding:14px 0; border:1px solid var(--border); border-radius:8px;
+              background:var(--white); font-size:1.1rem; font-weight:600;
+              cursor:${k==='' ? 'default':'pointer'}; transition:background 0.12s;
+              color:var(--text-primary);
+              ${k==='' ? 'visibility:hidden;' : ''}
+            " ${k==='' ? 'disabled' : ''}>${k}</button>
+          `).join('')}
+        </div>
+        <div id="pin-error" style="font-size:0.8rem;color:var(--danger);min-height:18px;"></div>
+        <button onclick="App._pinCancel()" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);background:none;border:none;cursor:pointer;">Batal</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    // Simpan target page
+    modal.dataset.targetPage = pageId;
+    window._pinBuffer = '';
+  }
+
+  function _pinKey(key) {
+    const modal = document.getElementById('pin-modal');
+    if (!modal) return;
+    if (key === '⌫') {
+      window._pinBuffer = (window._pinBuffer || '').slice(0, -1);
+    } else if (key !== '') {
+      if ((window._pinBuffer || '').length >= 4) return;
+      window._pinBuffer = (window._pinBuffer || '') + key;
+    }
+    // Update dots
+    const len = (window._pinBuffer || '').length;
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById(`pin-dot-${i}`);
+      if (dot) dot.style.background = i < len ? 'var(--green)' : 'transparent';
+    }
+    // Auto check jika sudah 4 digit
+    if (len === 4) {
+      setTimeout(() => _pinCheck(modal), 150);
+    }
+  }
+
+  function _pinCheck(modal) {
+    const errEl   = document.getElementById('pin-error');
+    const pageId  = modal.dataset.targetPage;
+    if (window._pinBuffer === PIN_CODE) {
+      _pinUnlocked = true;
+      modal.remove();
+      window._pinBuffer = '';
+      _doNavigate(pageId, PAGE_META[pageId]);
+    } else {
+      if (errEl) errEl.textContent = 'PIN salah. Coba lagi.';
+      // Shake dots
+      window._pinBuffer = '';
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`pin-dot-${i}`);
+        if (dot) { dot.style.background = 'var(--danger)'; }
+      }
+      setTimeout(() => {
+        for (let i = 0; i < 4; i++) {
+          const dot = document.getElementById(`pin-dot-${i}`);
+          if (dot) dot.style.background = 'transparent';
+        }
+      }, 600);
+    }
+  }
+
+  function _pinCancel() {
+    document.getElementById('pin-modal')?.remove();
+    window._pinBuffer = '';
+  }
+
+  function _doNavigate(pageId, meta) {
 
     document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(el => el.classList.remove('active'));
     const desktopEl = document.getElementById(`nav-desktop-${pageId}`);
@@ -317,7 +425,7 @@ const App = (() => {
     }, duration);
   }
 
-  return { init, devLogin, logout, navigateTo, getUser, toggleSidebar, showLoading, hideLoading, toast };
+  return { init, devLogin, logout, navigateTo, getUser, toggleSidebar, _pinKey, _pinCancel, showLoading, hideLoading, toast };
 })();
 
 // === INIT ===

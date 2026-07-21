@@ -222,9 +222,7 @@ const AbsenPage = (() => {
     _canvasEl.width  = w;
     _canvasEl.height = h;
     const ctx = _canvasEl.getContext('2d');
-    // Mirror (selfie feel)
-    ctx.translate(w, 0);
-    ctx.scale(-1, 1);
+    // Tidak di-mirror: gambar natural sesuai arah asli kamera
     ctx.drawImage(_videoEl, 0, 0, w, h);
     // Kualitas 0.65 = kompres ~60-70% lebih kecil dari original
     return _canvasEl.toDataURL('image/jpeg', 0.65);
