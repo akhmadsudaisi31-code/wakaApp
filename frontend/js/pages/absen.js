@@ -230,9 +230,78 @@ const AbsenPage = (() => {
     });
   }
 
+  // === HELPER JARAK (Haversine Formula) ===
+  function _getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Radius bumi dalam meter
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // jarak dalam meter
+  }
+
+  function _checkLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        return reject(new Error('Browser Anda tidak mendukung GPS / Geolocation.'));
+      }
+      
+      _setStatus('Mengecek lokasi Anda...', 'processing');
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLat = position.coords.latitude;
+          const userLng = position.coords.longitude;
+          
+          let isAllowed = false;
+          let allowedLocationName = '';
+          let nearestDistance = Infinity;
+
+          for (const loc of CONFIG.ALLOWED_LOCATIONS) {
+            const dist = _getDistance(userLat, userLng, loc.lat, loc.lng);
+            if (dist < nearestDistance) nearestDistance = dist;
+            
+            if (dist <= loc.radius) {
+              isAllowed = true;
+              allowedLocationName = loc.name;
+              break; // Cukup 1 lokasi yang match
+            }
+          }
+
+          if (isAllowed) {
+            resolve({ success: true, name: allowedLocationName });
+          } else {
+            reject(new Error(`Anda berada di luar area absen. Jarak terdekat: ${Math.round(nearestDistance)} meter dari area diizinkan.`));
+          }
+        },
+        (error) => {
+          let msg = 'Gagal mengambil lokasi.';
+          if (error.code === 1) msg = 'Akses lokasi (GPS) ditolak. Izinkan GPS untuk absen.';
+          if (error.code === 2) msg = 'Lokasi tidak tersedia (Sinyal GPS lemah).';
+          if (error.code === 3) msg = 'Waktu permintaan lokasi habis (Timeout).';
+          reject(new Error(msg));
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  }
+
   // === SUBMIT ABSEN ===
   async function _submitAbsen(jenis) {
-    let finalBase64 = null;
+    const btnMasuk  = document.getElementById('btn-masuk');
+    const btnPulang = document.getElementById('btn-pulang');
+    btnMasuk.disabled = btnPulang.disabled = true;
+
+    try {
+      // 1. Cek Lokasi Dulu (Geofencing)
+      if (CONFIG.ALLOWED_LOCATIONS && CONFIG.ALLOWED_LOCATIONS.length > 0) {
+        await _checkLocation();
+      }
+
+      // 2. Ambil Foto
+      let finalBase64 = null;
 
     if (_mode === 'upload') {
       if (!_fallbackBase64) {
@@ -252,12 +321,8 @@ const AbsenPage = (() => {
       }
     }
 
-    const btnMasuk  = document.getElementById('btn-masuk');
-    const btnPulang = document.getElementById('btn-pulang');
-    btnMasuk.disabled = btnPulang.disabled = true;
-    _setStatus(`Memproses absen ${jenis}... harap tunggu.`, 'processing');
+      _setStatus(`Memproses absen ${jenis}... harap tunggu.`, 'processing');
 
-    try {
       const res = await API.absen.submit({ jenis, foto: finalBase64 });
 
       if (res.success) {
