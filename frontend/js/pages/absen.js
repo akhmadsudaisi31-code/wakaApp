@@ -23,13 +23,10 @@ const AbsenPage = (() => {
       </div>
 
       <div style="max-width: 480px; margin: 0 auto;">
-        <!-- Mode Selector -->
-        <div class="camera-mode-tabs">
-          <div class="camera-mode-tab active" id="tab-live" onclick="AbsenPage._switchMode('live')">
+        <!-- Mode Selector (Hanya Kamera Langsung) -->
+        <div class="camera-mode-tabs" style="display: none;">
+          <div class="camera-mode-tab active" id="tab-live">
             <i class="fa-solid fa-video"></i> Kamera Langsung
-          </div>
-          <div class="camera-mode-tab" id="tab-upload" onclick="AbsenPage._switchMode('upload')">
-            <i class="fa-solid fa-image"></i> Pilih Foto
           </div>
         </div>
 
@@ -61,22 +58,6 @@ const AbsenPage = (() => {
               <i class="fa-solid fa-circle-info"></i>
               Arahkan wajah ke dalam lingkaran panduan
             </p>
-          </div>
-
-          <!-- UPLOAD / FALLBACK MODE -->
-          <div id="absen-upload-mode" style="display:none;">
-            <div class="camera-preview" id="upload-preview-box" style="background: var(--surface-2); border: 2px dashed var(--border); cursor:pointer;" onclick="document.getElementById('absen-file-input').click()">
-              <div class="camera-placeholder" id="upload-placeholder">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <p>Klik untuk memilih foto</p>
-                <span style="font-size:0.75rem; color:var(--text-muted);">atau gunakan kamera HP Anda</span>
-              </div>
-              <img id="upload-preview-img" src="" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:var(--radius-lg);">
-            </div>
-            <input type="file" id="absen-file-input" accept="image/*" capture="user" style="display:none;" onchange="AbsenPage._onFileSelect(event)">
-            <button class="btn btn-outline btn-full" style="margin-top:12px;" onclick="document.getElementById('absen-file-input').click()">
-              <i class="fa-solid fa-camera"></i> Buka Kamera Perangkat
-            </button>
           </div>
 
           <!-- Error Alert -->
@@ -165,21 +146,13 @@ const AbsenPage = (() => {
     document.getElementById('camera-error-detail').textContent = ' ' + detail;
     errorAlert.style.display = 'flex';
     placeholder.innerHTML = `<i class="fa-solid fa-video-slash" style="color:var(--danger);"></i><p style="color:var(--danger);">Kamera tidak tersedia</p>`;
-    // Auto switch to upload mode
-    _switchMode('upload');
+    // Tidak pindah ke mode upload karena sudah dihapus
+    // _switchMode('upload');
   }
 
   // === SWITCH MODE ===
   function _switchMode(mode) {
     _mode = mode;
-    document.getElementById('tab-live').classList.toggle('active', mode === 'live');
-    document.getElementById('tab-upload').classList.toggle('active', mode === 'upload');
-    document.getElementById('absen-live-mode').style.display   = mode === 'live' ? 'block' : 'none';
-    document.getElementById('absen-upload-mode').style.display = mode === 'upload' ? 'block' : 'none';
-
-    if (mode === 'live' && !_stream) {
-      _initCamera();
-    }
   }
 
   // === FILE SELECT (Mode Upload) ===
