@@ -50,7 +50,7 @@ const AbsenPage = (() => {
                   <i class="fa-solid fa-camera" style="color: var(--text-muted);"></i>
                   <p>Memuat kamera...</p>
                 </div>
-                <video id="absen-video" autoplay playsinline muted style="display:none; width:100%; height:100%; object-fit:cover;"></video>
+                <video id="absen-video" autoplay playsinline muted style="display:none; width:100%; height:100%; object-fit:cover; transform:scaleX(-1);"></video>
                 <canvas id="absen-canvas" style="display:none;"></canvas>
                 <div class="camera-overlay" id="camera-overlay" style="display:none;">
                   <div class="face-guide"></div>
@@ -222,7 +222,9 @@ const AbsenPage = (() => {
     _canvasEl.width  = w;
     _canvasEl.height = h;
     const ctx = _canvasEl.getContext('2d');
-    // Tidak di-mirror: gambar natural sesuai arah asli kamera
+    // Mirror agar hasil foto sama dengan preview (seperti cermin)
+    ctx.translate(w, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(_videoEl, 0, 0, w, h);
     // Kualitas 0.65 = kompres ~60-70% lebih kecil dari original
     return _canvasEl.toDataURL('image/jpeg', 0.65);
