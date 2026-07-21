@@ -101,7 +101,12 @@
         <div class="mobile-logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
         <span id="mobile-page-title">Beranda</span>
       </div>
-      <div id="mobile-user-avatar" class="mobile-user-avatar"></div>
+      <div class="mobile-header-right" style="display: flex; align-items: center; gap: 10px;">
+        <div id="mobile-user-avatar" class="mobile-user-avatar"></div>
+        <button class="btn btn-ghost" onclick="App.logout()" style="color: var(--danger); padding: 4px 8px; border: none; background: transparent; cursor: pointer; font-size: 1.1rem;">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
     </header>
 
     <!-- Overlay backdrop untuk sidebar mobile -->
