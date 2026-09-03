@@ -183,7 +183,6 @@ const DashboardPage = (() => {
   function _getQuickActions(role) {
     const actions = [];
     if (role === 'guru' || role === 'waka') {
-      actions.push({ page: 'absen',   icon: 'fa-camera-retro', label: 'Absen Sekarang', color: 'var(--success)' });
       actions.push({ page: 'jurnal',  icon: 'fa-book-open',    label: 'Isi E-Jurnal',  color: 'var(--primary)' });
       actions.push({ page: 'jadwal',  icon: 'fa-calendar-day', label: 'Lihat Jadwal',  color: 'var(--info)'    });
     }

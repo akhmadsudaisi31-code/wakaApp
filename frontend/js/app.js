@@ -65,12 +65,50 @@ const App = (() => {
 
     google.accounts.id.renderButton(
       document.getElementById('google-login-container'),
-      { theme: 'outline', size: 'large', width: '100%' }
+      { theme: 'outline', size: 'large', width: 320 }
     );
     
     // google.accounts.id.prompt(); // Opsional: Tampilkan One Tap prompt
 
-    // Cek apakah ada token yang tersimpan di sesi sebelumnya
+    // 1. Cek apakah ada token yang dikirim via URL query params (?token=xxx&name=yyy&role=zzz) dari redirect GAS
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken  = urlParams.get('token');
+    const urlName   = urlParams.get('name');
+    const urlRole   = urlParams.get('role');
+
+    if (urlToken) {
+      sessionStorage.setItem(SESSION_KEY, urlToken);
+      API.setToken(urlToken);
+      // Bersihkan query string dari URL browser agar rapi
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      showLoading('Menyiapkan aplikasi...');
+      API.auth.verify()
+        .then(res => {
+          hideLoading();
+          if (res.success) {
+            _user = res.user;
+            _renderApp();
+            toast('success', `Selamat datang, ${_user.nama}!`);
+          } else {
+            sessionStorage.removeItem(SESSION_KEY);
+            toast('error', res.message || 'Sesi tidak valid.');
+          }
+        })
+        .catch(() => {
+          hideLoading();
+          // Fallback jika API verifikasi offline/error tapi token baru saja dari GAS
+          if (urlName && urlRole) {
+            _user = { nama: decodeURIComponent(urlName), role: decodeURIComponent(urlRole) };
+            _renderApp();
+          } else {
+            sessionStorage.removeItem(SESSION_KEY);
+          }
+        });
+      return;
+    }
+
+    // 2. Cek apakah ada token yang tersimpan di sesi sebelumnya
     const savedToken = sessionStorage.getItem(SESSION_KEY);
     if (savedToken) {
       showLoading('Memverifikasi sesi...');

@@ -95,28 +95,37 @@ function api_submitJurnal(payload) {
       statusKehadiran += " (Inval)";
     }
     
-    const rowData = [
-      timestamp,
-      todayStr,
-      user.id_guru,
-      payload.id_kelas,
-      payload.mapel,
-      payload.jam_ke,
-      payload.id_atp || "",
-      payload.materi_bebas || "",
-      payload.jumlah_hadir || 0,
-      payload.jumlah_sakit || 0,
-      payload.jumlah_izin || 0,
-      payload.jumlah_alpa || 0,
-      payload.catatan_kendala || "",
-      statusKehadiran,
-      payload.link_dokumentasi || ""
-    ];
-    
-    // Cek duplikasi
+    // Buat rowData berdasarkan urutan header yang ada di sheet
     const dataJurnal = sheetJurnal.getDataRange().getValues();
     const headJurnal = dataJurnal[0];
     
+    // Pastikan kolom baru link_dokumentasi ada di header jika belum ada
+    if (headJurnal.indexOf("link_dokumentasi") === -1) {
+      sheetJurnal.getRange(1, headJurnal.length + 1).setValue("link_dokumentasi").setFontWeight("bold");
+      headJurnal.push("link_dokumentasi");
+    }
+
+    const valueMap = {
+      "timestamp": timestamp,
+      "tanggal": todayStr,
+      "id_guru": user.id_guru,
+      "id_kelas": payload.id_kelas,
+      "mapel": payload.mapel,
+      "jam_ke": payload.jam_ke,
+      "id_atp": payload.id_atp || "",
+      "materi_bebas": payload.materi_bebas || "",
+      "jumlah_hadir": payload.jumlah_hadir || 0,
+      "jumlah_sakit": payload.jumlah_sakit || 0,
+      "jumlah_izin": payload.jumlah_izin || 0,
+      "jumlah_alpa": payload.jumlah_alpa || 0,
+      "catatan_kendala": payload.catatan_kendala || "",
+      "status_kehadiran": statusKehadiran,
+      "link_dokumentasi": payload.link_dokumentasi || ""
+    };
+
+    let rowData = headJurnal.map(h => (valueMap[h] !== undefined ? valueMap[h] : ""));
+
+    // Cek duplikasi entri di hari, guru, kelas, dan jam yang sama
     const idxTgl = headJurnal.indexOf("tanggal");
     const idxIdGuru = headJurnal.indexOf("id_guru");
     const idxIdKelas = headJurnal.indexOf("id_kelas");

@@ -44,7 +44,13 @@
       </div>
 
       <!-- Container untuk Google Sign-In Button Native -->
-      <div id="google-login-container" style="display: flex; justify-content: center; width: 100%; margin-top: 20px;"></div>
+      <div id="google-login-container" style="display: flex; justify-content: center; width: 100%; margin-top: 14px;"></div>
+
+      <div style="margin-top: 12px; text-align: center;">
+        <button type="button" class="btn btn-outline btn-full" onclick="App.redirectToGASLogin()" style="font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <i class="fa-brands fa-google" style="color:#ea4335;"></i> Masuk Langsung via Akun Google
+        </button>
+      </div>
 
       <p class="login-note">
         <i class="fa-solid fa-lock"></i>
@@ -138,7 +144,6 @@
   <script src="js/api.js"></script>
   <script src="js/pages/dashboard.js"></script>
   <script src="js/pages/ejurnal.js"></script>
-  <script src="js/pages/absen.js"></script>
   <script src="js/pages/jadwal.js"></script>
   <script src="js/pages/perangkat.js"></script>
   <script src="js/pages/pkl.js"></script>
