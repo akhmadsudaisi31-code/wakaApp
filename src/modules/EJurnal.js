@@ -15,6 +15,7 @@ function api_getFormDataJurnal() {
     const idxMapel = headJadwal.indexOf("mapel");
     const idxHari = headJadwal.indexOf("hari");
     const idxJam = headJadwal.indexOf("jam_ke");
+    const idxGuru = headJadwal.indexOf("id_guru");
     // Ambil hari ini dalam WIB
     const nowWIB = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
