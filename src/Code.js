@@ -179,6 +179,12 @@ function doPost(e) {
       case 'deleteRow':
         return _jsonResponse(api_deleteRow(payload.tableName, payload.rowIndex));
 
+      case 'submitPKL':
+        return _jsonResponse(api_submitMonitoringPKL(payload));
+
+      case 'submitSupervisi':
+        return _jsonResponse(api_submitSupervisi(payload));
+
       default:
         return _jsonResponse({ success: false, message: `Action tidak dikenal: ${action}` });
     }
