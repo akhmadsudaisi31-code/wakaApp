@@ -12,47 +12,45 @@ function api_getPerangkatData() {
     if (!sheetPerangkat) throw new Error("Database Perangkat belum disetup.");
     
     const dataPerangkat = sheetPerangkat.getDataRange().getValues();
-    const headPerangkat = dataPerangkat[0];
+    const headPerangkat = dataPerangkat[0] || [];
+    const idxGuru = headPerangkat.indexOf('id_guru');
+    const idxMapel = headPerangkat.indexOf('mapel');
+    const idxJenis = headPerangkat.indexOf('jenis_dokumen');
+    const idxStatus = headPerangkat.indexOf('status');
+    const idxLink = headPerangkat.indexOf('link_dokumen');
+    const idxTgl = headPerangkat.indexOf('tanggal_update');
     
     // Mapping guru
     const sheetGuru = ss.getSheetByName(CONFIG.SHEET_NAMES.GURU);
-    const dataGuru = sheetGuru.getDataRange().getValues();
     let mapGuru = {};
-    for (let i = 1; i < dataGuru.length; i++) {
-      mapGuru[dataGuru[i][0]] = dataGuru[i][1];
+    if (sheetGuru) {
+      const dataGuru = sheetGuru.getDataRange().getValues();
+      for (let i = 1; i < dataGuru.length; i++) {
+        mapGuru[dataGuru[i][0]] = dataGuru[i][1];
+      }
     }
     
     let hasil = [];
     
     for (let i = 1; i < dataPerangkat.length; i++) {
       const row = dataPerangkat[i];
-      if (user.role === 'guru') {
-        // Guru hanya melihat miliknya
-        if (row[0] === user.id_guru) {
-          hasil.push({
-            id_guru: row[0],
-            nama_guru: mapGuru[row[0]],
-            mapel: row[1],
-            jenis_dokumen: row[2],
-            status: row[3],
-            link: row[4],
-            tgl: row[5] ? formatDate(row[5]) : '-',
-            row_index: i + 1 // Untuk update
-          });
-        }
-      } else {
-        // Waka/Kepsek melihat semua
-        hasil.push({
-          id_guru: row[0],
-          nama_guru: mapGuru[row[0]],
-          mapel: row[1],
-          jenis_dokumen: row[2],
-          status: row[3],
-          link: row[4],
-          tgl: row[5] ? formatDate(row[5]) : '-',
-          row_index: i + 1
-        });
+      const gId = idxGuru > -1 ? row[idxGuru] : row[0];
+      
+      if (user.role === 'guru' && String(gId) !== String(user.id_guru)) {
+        continue;
       }
+      
+      const tglVal = idxTgl > -1 ? row[idxTgl] : row[5];
+      hasil.push({
+        id_guru: gId,
+        nama_guru: mapGuru[gId] || gId,
+        mapel: idxMapel > -1 ? row[idxMapel] : row[1],
+        jenis_dokumen: idxJenis > -1 ? row[idxJenis] : row[2],
+        status: idxStatus > -1 ? row[idxStatus] : row[3],
+        link: idxLink > -1 ? row[idxLink] : row[4],
+        tgl: tglVal ? formatDate(tglVal) : '-',
+        row_index: i + 1
+      });
     }
     
     return { success: true, data: hasil, role: user.role };
@@ -68,22 +66,31 @@ function api_updatePerangkat(payload) {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAMES.PERANGKAT);
     
-    const rowIndex = payload.row_index;
+    if (!sheet) throw new Error("Tabel Perangkat_Ajar tidak ditemukan.");
+
+    const rowIndex = parseInt(payload.row_index);
+    if (!rowIndex || rowIndex <= 1) throw new Error("Index baris tidak valid.");
+
+    const headers = sheet.getDataRange().getValues()[0] || [];
+    const idxStatus = headers.indexOf('status') + 1;
+    const idxLink = headers.indexOf('link_dokumen') + 1;
+    const idxTgl = headers.indexOf('tanggal_update') + 1;
+
     const isGuru = user.role === 'guru';
     
-    // Jika guru, hanya update link & status mnjd 'Sudah Kumpul'
+    // Jika guru, update link & status menjadi 'Sudah Kumpul'
     if (isGuru && payload.action === 'upload') {
-      // Asumsi kolom E (5) adalah link, kolom D (4) adalah status, kolom F (6) adalah tgl
-      sheet.getRange(rowIndex, 5).setValue(payload.link);
-      sheet.getRange(rowIndex, 4).setValue('Sudah Kumpul');
-      sheet.getRange(rowIndex, 6).setValue(new Date());
+      if (idxLink > 0) sheet.getRange(rowIndex, idxLink).setValue(payload.link);
+      if (idxStatus > 0) sheet.getRange(rowIndex, idxStatus).setValue('Sudah Kumpul');
+      if (idxTgl > 0) sheet.getRange(rowIndex, idxTgl).setValue(new Date());
     } 
-    // Jika waka, update status mnjd 'Terverifikasi' atau 'Revisi' dsb
+    // Jika waka/kepsek, update status verifikasi
     else if (!isGuru && payload.action === 'verify') {
-      sheet.getRange(rowIndex, 4).setValue(payload.new_status);
+      if (idxStatus > 0) sheet.getRange(rowIndex, idxStatus).setValue(payload.new_status);
+      if (idxTgl > 0) sheet.getRange(rowIndex, idxTgl).setValue(new Date());
     }
     
-    return { success: true, message: "Berhasil diupdate!" };
+    return { success: true, message: "Perangkat ajar berhasil diupdate!" };
   } catch (e) {
     return { success: false, message: e.message };
   }

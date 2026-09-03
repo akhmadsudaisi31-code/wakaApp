@@ -161,6 +161,9 @@ function doPost(e) {
       case 'getJadwal':
         return _jsonResponse(_api_getJadwal());
 
+      case 'saveJadwal':
+        return _jsonResponse(api_saveJadwal(payload));
+
       case 'getPerangkatData':
         return _jsonResponse(api_getPerangkatData());
 
