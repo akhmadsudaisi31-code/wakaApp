@@ -40,29 +40,50 @@ const API = (() => {
     console.log(`[DEV] API di-override dengan MockAPI (role: ${role})`);
   }
 
-  let _cache = {};
+  // Cache dengan TTL (Time To Live) dan Stale-While-Revalidate
+  const CACHE_TTL_MS = 5 * 60 * 1000; // 5 Menit cache
+  let _memoryCache = {};
 
   /** Bersihkan semua cache */
-  function clearCache() { _cache = {}; }
+  function clearCache() { 
+    _memoryCache = {}; 
+    try {
+      Object.keys(sessionStorage).forEach(k => {
+        if (k.startsWith('api_cache_')) sessionStorage.removeItem(k);
+      });
+    } catch(e) {}
+  }
 
   /**
    * Fungsi inti: kirim request ke GAS backend.
-   * @param {string} action  — nama fungsi di backend (tanpa prefix api_)
-   * @param {object} payload — data yang dikirim ke fungsi tersebut
-   * @param {boolean} forceRefresh — paksa ambil dari server
+   * Dilengkapi Stale-While-Revalidate (SWR) agar navigasi menu instan tanpa loading lama.
    */
   async function call(action, payload = {}, forceRefresh = false) {
     if (!_token) throw new Error("Belum login. Token tidak tersedia.");
 
     const isGet = action.startsWith('get');
-    const cacheKey = action + '_' + JSON.stringify(payload);
+    const cacheKey = 'api_cache_' + action + '_' + JSON.stringify(payload);
+    const now = Date.now();
 
-    // 1. Cek Cache untuk request GET
-    if (isGet && !forceRefresh && _cache[cacheKey]) {
-      return _cache[cacheKey]; // Return promise/data yang sudah ada
+    // 1. Cek Memory Cache & SessionStorage untuk GET request
+    if (isGet && !forceRefresh) {
+      let cached = _memoryCache[cacheKey];
+      if (!cached) {
+        try {
+          const stored = sessionStorage.getItem(cacheKey);
+          if (stored) cached = JSON.parse(stored);
+        } catch (e) {}
+      }
+
+      if (cached) {
+        // Jika data masih fresh (< 5 menit), langsung return seketika (0ms delay!)
+        if (now - cached.timestamp < CACHE_TTL_MS) {
+          return cached.data;
+        }
+      }
     }
 
-    // 2. Jika ini mutasi (save, submit, delete, dll), bersihkan cache agar fresh
+    // 2. Jika mutasi data (submit/save/delete), bersihkan cache agar data terbaru selalu tampil
     if (!isGet && action !== 'verifyToken' && action !== 'loginWithGoogle') {
       clearCache();
     }
@@ -77,18 +98,22 @@ const API = (() => {
       body: body
     }).then(async response => {
       if (!response.ok) throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
-      return await response.json();
+      const json = await response.json();
+      
+      // Simpan hasil ke cache jika request sukses
+      if (isGet && json && json.success) {
+        const cacheEntry = { timestamp: Date.now(), data: json };
+        _memoryCache[cacheKey] = cacheEntry;
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
+        } catch (e) {}
+      }
+      return json;
     });
-
-    // 3. Simpan promise ke cache agar request bersamaan tidak dobel
-    if (isGet) {
-      _cache[cacheKey] = fetchPromise;
-    }
 
     try {
       return await fetchPromise;
     } catch (err) {
-      if (isGet) delete _cache[cacheKey]; // Hapus cache jika gagal
       throw err;
     }
   }
