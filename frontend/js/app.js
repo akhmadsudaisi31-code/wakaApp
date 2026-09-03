@@ -77,6 +77,7 @@ const App = (() => {
     const urlRole   = urlParams.get('role');
 
     if (urlToken) {
+      localStorage.setItem(SESSION_KEY, urlToken);
       sessionStorage.setItem(SESSION_KEY, urlToken);
       API.setToken(urlToken);
       // Bersihkan query string dari URL browser agar rapi
@@ -88,9 +89,11 @@ const App = (() => {
           hideLoading();
           if (res.success) {
             _user = res.user;
+            localStorage.setItem('cached_user_profile', JSON.stringify(_user));
             _renderApp();
             toast('success', `Selamat datang, ${_user.nama}!`);
           } else {
+            localStorage.removeItem(SESSION_KEY);
             sessionStorage.removeItem(SESSION_KEY);
             toast('error', res.message || 'Sesi tidak valid.');
           }
@@ -100,33 +103,51 @@ const App = (() => {
           // Fallback jika API verifikasi offline/error tapi token baru saja dari GAS
           if (urlName && urlRole) {
             _user = { nama: decodeURIComponent(urlName), role: decodeURIComponent(urlRole) };
+            localStorage.setItem('cached_user_profile', JSON.stringify(_user));
             _renderApp();
           } else {
+            localStorage.removeItem(SESSION_KEY);
             sessionStorage.removeItem(SESSION_KEY);
           }
         });
       return;
     }
 
-    // 2. Cek apakah ada token yang tersimpan di sesi sebelumnya
-    const savedToken = sessionStorage.getItem(SESSION_KEY);
+    // 2. Cek apakah ada token yang tersimpan di sesi sebelumnya (1 Minggu Persistent Login)
+    const savedToken = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
     if (savedToken) {
-      showLoading('Memverifikasi sesi...');
       API.setToken(savedToken);
+      
+      // Jika profil lokal sudah ada, langsung render seketika tanpa nunggu server
+      const cachedProfile = localStorage.getItem('cached_user_profile');
+      if (cachedProfile) {
+        try {
+          _user = JSON.parse(cachedProfile);
+          _renderApp();
+        } catch(e) {}
+      } else {
+        showLoading('Memverifikasi sesi...');
+      }
+
       API.auth.verify()
         .then(res => {
           hideLoading();
           if (res.success) {
             _user = res.user;
-            _renderApp();
-            toast('success', `Selamat datang kembali, ${_user.nama}!`);
+            localStorage.setItem('cached_user_profile', JSON.stringify(_user));
+            if (!cachedProfile) {
+              _renderApp();
+              toast('success', `Selamat datang kembali, ${_user.nama}!`);
+            }
           } else {
+            localStorage.removeItem(SESSION_KEY);
             sessionStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem('cached_user_profile');
+            logout();
           }
         })
         .catch(err => {
           hideLoading();
-          sessionStorage.removeItem(SESSION_KEY);
         });
     }
   }
@@ -204,6 +225,8 @@ const App = (() => {
   function logout() {
     if (!confirm('Yakin ingin keluar?')) return;
     sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem('cached_user_profile');
     API.setToken(null);
     _user        = null;
     _currentPage = null;

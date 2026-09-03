@@ -13,9 +13,9 @@ const CONFIG = {
   FRONTEND_URL: "https://waka-app-smk.pages.dev",
 
   /**
-   * Durasi sesi login (dalam milidetik). Default: 8 jam.
+   * Durasi sesi login (dalam milidetik). Default: 7 hari (1 minggu).
    */
-  SESSION_DURATION_MS: 8 * 60 * 60 * 1000,
+  SESSION_DURATION_MS: 7 * 24 * 60 * 60 * 1000,
 
   SHEET_NAMES: {
     GURU: "Master_Guru",

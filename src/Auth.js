@@ -72,7 +72,7 @@ function validateSessionToken(token) {
   // Cek expiry
   if (Date.now() > tokenData.expiry) {
     props.deleteProperty(`sess_${token}`);
-    throw new Error('Sesi telah berakhir (lebih dari 8 jam). Silakan login kembali.');
+    throw new Error('Sesi telah berakhir (lebih dari 7 hari). Silakan login kembali.');
   }
 
   return tokenData;
