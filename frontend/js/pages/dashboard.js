@@ -72,17 +72,21 @@ const DashboardPage = (() => {
       }
 
     } catch (err) {
-      document.getElementById('stats-grid').innerHTML = `
-        <div class="alert alert-danger" style="grid-column:1/-1;">
-          <i class="fa-solid fa-circle-exclamation"></i>
-          <span>Gagal memuat data dashboard: ${err.message}</span>
-        </div>
-      `;
+      const statsGrid = document.getElementById('stats-grid');
+      if (statsGrid) {
+        statsGrid.innerHTML = `
+          <div class="alert alert-danger" style="grid-column:1/-1;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>Gagal memuat data dashboard: ${err.message}</span>
+          </div>
+        `;
+      }
     }
   }
 
   function _renderStats(data, user) {
     const statsGrid = document.getElementById('stats-grid');
+    if (!statsGrid) return;
     const { guruStats, globalStats, role } = data;
 
     let cards = [];

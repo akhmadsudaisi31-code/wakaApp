@@ -12,8 +12,8 @@ function api_getDashboardData() {
     
     // Ambil Data Jurnal
     const sheetJurnal = ss.getSheetByName(CONFIG.SHEET_NAMES.JURNAL);
-    const dataJurnal = sheetJurnal.getDataRange().getValues();
-    const headJurnal = dataJurnal[0];
+    const dataJurnal = sheetJurnal ? sheetJurnal.getDataRange().getValues() : [];
+    const headJurnal = dataJurnal[0] || [];
     
     const idxTglJur = headJurnal.indexOf("tanggal");
     const idxGuruJur = headJurnal.indexOf("id_guru");
@@ -22,8 +22,8 @@ function api_getDashboardData() {
     
     // Ambil Data Jadwal
     const sheetJadwal = ss.getSheetByName(CONFIG.SHEET_NAMES.JADWAL);
-    const dataJadwal = sheetJadwal.getDataRange().getValues();
-    const headJadwal = dataJadwal[0];
+    const dataJadwal = sheetJadwal ? sheetJadwal.getDataRange().getValues() : [];
+    const headJadwal = dataJadwal[0] || [];
     
     const idxGuruJdw = headJadwal.indexOf("id_guru");
     const idxMapelJdw = headJadwal.indexOf("mapel");
