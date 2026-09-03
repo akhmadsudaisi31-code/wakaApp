@@ -58,13 +58,21 @@ const EJurnalPage = (() => {
 
             <!-- Pilih Jadwal Kelas -->
             <div class="form-group">
-              <label class="form-label" for="jur_jadwal">Kelas & Mapel <span class="required">*</span></label>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label class="form-label" for="jur_jadwal" style="margin-bottom:0;">Kelas & Mapel <span class="required">*</span></label>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="EJurnalPage._toggleSemuaHari()" id="btn-toggle-semua-hari" style="font-size:0.75rem; padding:2px 6px; color:var(--info);">
+                  <i class="fa-solid fa-calendar-days"></i> Tampilkan Semua Hari
+                </button>
+              </div>
               <select id="jur_jadwal" class="form-control" required onchange="EJurnalPage._onJadwalSelect()">
                 <option value="">-- Pilih Jadwal --</option>
               </select>
-              <p id="jur-no-jadwal-msg" style="display:none; font-size:0.82rem; color:var(--text-muted); margin-top:6px;">
-                <i class="fa-solid fa-circle-info"></i> Tidak ada jadwal untuk hari ini.
-              </p>
+              <div id="jur-no-jadwal-msg" style="display:none; font-size:0.82rem; color:var(--text-muted); margin-top:6px; padding:8px 12px; background:var(--surface); border-radius:var(--radius); border-left:3px solid var(--warning);">
+                <i class="fa-solid fa-circle-info" style="color:var(--warning);"></i> Tidak ada jadwal untuk Anda di hari <strong id="jur-hari-teks">hari ini</strong>.
+                <div style="margin-top:4px;">
+                  <a href="javascript:void(0)" onclick="EJurnalPage._toggleSemuaHari(true)" style="color:var(--primary); font-weight:600; text-decoration:underline;">Klik di sini untuk melihat jadwal hari lain</a> atau centang <em>Guru Pengganti (Inval)</em> di atas.
+                </div>
+              </div>
             </div>
 
             <!-- Materi ATP -->
@@ -250,6 +258,8 @@ const EJurnalPage = (() => {
 
       const hariBadge = document.getElementById('jur-hari-badge');
       if (hariBadge) hariBadge.textContent = res.data.hari || 'Hari Ini';
+      const hariTeks = document.getElementById('jur-hari-teks');
+      if (hariTeks) hariTeks.textContent = res.data.hari || 'hari ini';
 
       if (loadingState) loadingState.style.display = 'none';
       if (formEl) formEl.style.display = 'block';
@@ -330,9 +340,42 @@ const EJurnalPage = (() => {
     }
   }
 
+  let _showAllDays = false;
+
+  function _toggleSemuaHari(forceState) {
+    if (!_masterData) return;
+    _showAllDays = forceState !== undefined ? forceState : !_showAllDays;
+
+    const btn = document.getElementById('btn-toggle-semua-hari');
+    if (btn) {
+      btn.innerHTML = _showAllDays 
+        ? '<i class="fa-solid fa-filter"></i> Hanya Hari Ini' 
+        : '<i class="fa-solid fa-calendar-days"></i> Tampilkan Semua Hari';
+    }
+
+    const isInval = document.getElementById('jur_is_inval')?.checked;
+    _toggleInval(isInval);
+  }
+
   function _toggleInval(isChecked) {
     if (!_masterData) return;
-    _currentJadwalList = isChecked ? _masterData.jadwalSemua : _masterData.jadwalKu;
+    
+    if (isChecked) {
+      _currentJadwalList = _masterData.jadwalSemua || [];
+    } else {
+      if (_showAllDays && _masterData.semuaJadwalKu && _masterData.semuaJadwalKu.length > 0) {
+        _currentJadwalList = _masterData.semuaJadwalKu;
+      } else {
+        _currentJadwalList = _masterData.jadwalKu || [];
+        // Fallback jika hari ini kosong tapi guru punya jadwal di hari lain
+        if (_currentJadwalList.length === 0 && _masterData.semuaJadwalKu && _masterData.semuaJadwalKu.length > 0) {
+          _showAllDays = true;
+          _currentJadwalList = _masterData.semuaJadwalKu;
+          const btn = document.getElementById('btn-toggle-semua-hari');
+          if (btn) btn.innerHTML = '<i class="fa-solid fa-filter"></i> Hanya Hari Ini';
+        }
+      }
+    }
     _renderJadwalDropdown(_currentJadwalList);
   }
 
@@ -350,7 +393,8 @@ const EJurnalPage = (() => {
       if (noMsg) noMsg.style.display = 'none';
       sel.disabled = false;
       list.forEach((j, idx) => {
-        sel.innerHTML += `<option value="${idx}">Kelas ${j.id_kelas} — ${j.mapel} (Jam ke-${j.jam_ke})</option>`;
+        const infoHari = (_showAllDays && j.hari) ? `[${j.hari}] ` : '';
+        sel.innerHTML += `<option value="${idx}">${infoHari}Kelas ${j.id_kelas} — ${j.mapel} (Jam ke-${j.jam_ke})</option>`;
       });
     }
   }
@@ -518,6 +562,7 @@ const EJurnalPage = (() => {
     destroy,
     switchTab,
     _toggleInval,
+    _toggleSemuaHari,
     _onJadwalSelect,
     _onAtpChange,
     _onPhotoSelected,

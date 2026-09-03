@@ -15,26 +15,42 @@ function api_getFormDataJurnal() {
     const idxMapel = headJadwal.indexOf("mapel");
     const idxHari = headJadwal.indexOf("hari");
     const idxJam = headJadwal.indexOf("jam_ke");
-    const idxGuru = headJadwal.indexOf("id_guru");
-    
-    const hariIni = getDayName(new Date());
+    // Ambil hari ini dalam WIB
+    const nowWIB = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const hariIni = days[nowWIB.getDay()];
     
     let jadwalKu = [];
     let jadwalSemua = [];
+    let semuaJadwalKu = []; // Jadwal guru untuk semua hari (sebagai fallback)
     
+    const cleanUserGuru = String(user.id_guru || '').trim().toLowerCase();
+
     for (let i = 1; i < dataJadwal.length; i++) {
       let row = dataJadwal[i];
+      if (!row[idxIdKelas] && !row[idxMapel]) continue; // lewati baris kosong
+
+      const rowHari = String(row[idxHari] || '').trim();
+      const rowGuru = String(row[idxGuru] || '').trim();
+      const cleanRowGuru = rowGuru.toLowerCase();
+
       let j = {
         id_kelas: row[idxIdKelas],
         mapel: row[idxMapel],
         jam_ke: row[idxJam],
-        hari: row[idxHari]
+        hari: rowHari,
+        id_guru: rowGuru
       };
       
-      // Kumpulkan semua jadwal yang ada di hari ini
-      if (row[idxHari] === hariIni) {
+      // Catat semua jadwal guru tanpa filter hari
+      if (cleanRowGuru === cleanUserGuru || user.role === 'waka' || user.role === 'kepsek') {
+        semuaJadwalKu.push(j);
+      }
+
+      // Filter untuk hari ini (case-insensitive)
+      if (rowHari.toLowerCase() === hariIni.toLowerCase()) {
         jadwalSemua.push(j);
-        if (row[idxGuru] === user.id_guru) {
+        if (cleanRowGuru === cleanUserGuru || user.role === 'waka' || user.role === 'kepsek') {
           jadwalKu.push(j);
         }
       }
@@ -69,6 +85,7 @@ function api_getFormDataJurnal() {
         hari: hariIni,
         jadwalKu: jadwalKu,
         jadwalSemua: jadwalSemua,
+        semuaJadwalKu: semuaJadwalKu,
         atp: atpTersedia
       }
     };
