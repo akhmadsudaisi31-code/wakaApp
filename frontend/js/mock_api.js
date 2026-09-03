@@ -73,6 +73,44 @@ const MockAPI = {
         ]
       }
     }),
+    getRiwayat: async () => {
+      await _delay(300);
+      return {
+        success: true,
+        data: [
+          {
+            tanggal: '03-09-2026',
+            id_guru: 'DEV001',
+            id_kelas: 'XI-RPL-1',
+            mapel: 'Pemrograman Web',
+            jam_ke: 1,
+            id_atp: 'ATP-PW-01',
+            materi: 'Pengenalan HTML5 dan CSS3',
+            hadir: 32,
+            sakit: 1,
+            izin: 1,
+            alpa: 0,
+            catatan_kendala: 'KBM berjalan lancar, siswa antusias praktek layout flexbox.',
+            link_dokumentasi: 'https://drive.google.com'
+          },
+          {
+            tanggal: '02-09-2026',
+            id_guru: 'DEV001',
+            id_kelas: 'X-TKJ-2',
+            mapel: 'Jaringan Dasar',
+            jam_ke: 3,
+            id_atp: 'ATP-JD-01',
+            materi: 'Model OSI dan TCP/IP',
+            hadir: 30,
+            sakit: 2,
+            izin: 0,
+            alpa: 1,
+            catatan_kendala: 'Proyektor ruang lab sempat error 10 menit awal.',
+            link_dokumentasi: ''
+          }
+        ]
+      };
+    },
     submit: async (payload) => {
       await _delay(800);
       return { success: true, message: `[DEV] Jurnal untuk ${payload.id_kelas} berhasil disimpan! (mock)` };

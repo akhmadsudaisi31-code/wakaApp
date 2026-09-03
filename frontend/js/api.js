@@ -22,6 +22,7 @@ const API = (() => {
     auth.loginWithGoogle     = (jwtToken) => MockAPI.auth.loginWithGoogle(jwtToken);
     dashboard.getData        = () => MockAPI.dashboard.getData(role);
     jurnal.getFormData       = () => MockAPI.jurnal.getFormData();
+    jurnal.getRiwayat        = () => MockAPI.jurnal.getRiwayat();
     jurnal.submit            = (p) => MockAPI.jurnal.submit(p);
     absen.getLocations       = () => MockAPI.absen.getLocations();
     absen.getStatusHariIni   = () => MockAPI.absen.getStatusHariIni();
@@ -103,6 +104,7 @@ const API = (() => {
   // === E-JURNAL ===
   const jurnal = {
     getFormData: () => call('getFormDataJurnal', {}),
+    getRiwayat: () => call('getRiwayatJurnal', {}),
     submit: (payload) => call('submitJurnal', payload),
   };
 

@@ -108,7 +108,9 @@ function api_submitJurnal(payload) {
       payload.jumlah_sakit || 0,
       payload.jumlah_izin || 0,
       payload.jumlah_alpa || 0,
-      statusKehadiran
+      payload.catatan_kendala || "",
+      statusKehadiran,
+      payload.link_dokumentasi || ""
     ];
     
     // Cek duplikasi
@@ -142,6 +144,68 @@ function api_submitJurnal(payload) {
       return { success: true, message: "Jurnal berhasil disimpan!" };
     }
     
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Mengambil riwayat pengisian jurnal guru (7-30 hari terakhir)
+ */
+function api_getRiwayatJurnal() {
+  try {
+    const user = requireRole(['guru', 'waka', 'kepsek']);
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheetJurnal = ss.getSheetByName(CONFIG.SHEET_NAMES.JURNAL);
+    if (!sheetJurnal) return { success: true, data: [] };
+
+    const data = sheetJurnal.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, data: [] };
+
+    const head = data[0];
+    const idxTgl = head.indexOf("tanggal");
+    const idxGuru = head.indexOf("id_guru");
+    const idxKelas = head.indexOf("id_kelas");
+    const idxMapel = head.indexOf("mapel");
+    const idxJam = head.indexOf("jam_ke");
+    const idxAtp = head.indexOf("id_atp");
+    const idxMateriBebas = head.indexOf("materi_bebas");
+    const idxHadir = head.indexOf("jumlah_hadir");
+    const idxSakit = head.indexOf("jumlah_sakit");
+    const idxIzin = head.indexOf("jumlah_izin");
+    const idxAlpa = head.indexOf("jumlah_alpa");
+    const idxCatatan = head.indexOf("catatan_kendala");
+    const idxLink = head.indexOf("link_dokumentasi");
+
+    let riwayat = [];
+    // Baca dari data terbaru (bawah ke atas)
+    for (let i = data.length - 1; i >= 1; i--) {
+      const row = data[i];
+      // Jika guru biasa, hanya tampilkan jurnal miliknya
+      if (user.role === 'guru' && row[idxGuru] !== user.id_guru) {
+        continue;
+      }
+
+      riwayat.push({
+        tanggal: formatDate(row[idxTgl]),
+        id_guru: row[idxGuru],
+        id_kelas: row[idxKelas],
+        mapel: row[idxMapel],
+        jam_ke: row[idxJam],
+        id_atp: idxAtp > -1 ? row[idxAtp] : '',
+        materi: (idxMateriBebas > -1 && row[idxMateriBebas]) ? row[idxMateriBebas] : (idxAtp > -1 ? row[idxAtp] : '-'),
+        hadir: idxHadir > -1 ? (row[idxHadir] || 0) : 0,
+        sakit: idxSakit > -1 ? (row[idxSakit] || 0) : 0,
+        izin: idxIzin > -1 ? (row[idxIzin] || 0) : 0,
+        alpa: idxAlpa > -1 ? (row[idxAlpa] || 0) : 0,
+        catatan_kendala: idxCatatan > -1 ? row[idxCatatan] : '',
+        link_dokumentasi: idxLink > -1 ? row[idxLink] : ''
+      });
+
+      if (riwayat.length >= 30) break; // Batasi 30 entri terbaru
+    }
+
+    return { success: true, data: riwayat };
   } catch (e) {
     return { success: false, message: e.message };
   }

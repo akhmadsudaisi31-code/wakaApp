@@ -16,21 +16,20 @@ const App = (() => {
   const SESSION_KEY = 'waka_session_token';
 
   // === NAVIGASI CONFIG PER ROLE ===
-  // Semua menu yang muncul di SIDEBAR per role
+  // Semua menu yang muncul di SIDEBAR per role (Fokus E-Jurnal tanpa Absen)
   const NAV_ITEMS = {
-    guru:   ['home', 'jadwal', 'jurnal', 'absen', 'perangkat', 'pkl'],
-    waka:   ['home', 'jadwal', 'jurnal', 'absen', 'perangkat', 'pkl', 'supervisi', 'master'],
-    kepsek: ['home', 'jadwal', 'perangkat', 'supervisi', 'master'],
+    guru:   ['jurnal', 'home', 'jadwal', 'perangkat', 'pkl'],
+    waka:   ['jurnal', 'home', 'jadwal', 'perangkat', 'pkl', 'supervisi', 'master'],
+    kepsek: ['home', 'jurnal', 'jadwal', 'perangkat', 'supervisi', 'master'],
   };
 
-  // 4 item yang SELALU tampil di mobile bottom bar (sama untuk semua role)
-  const BOTTOM_NAV_ITEMS = ['home', 'jadwal', 'jurnal', 'absen'];
+  // Item yang tampil di mobile bottom bar
+  const BOTTOM_NAV_ITEMS = ['jurnal', 'home', 'jadwal', 'perangkat'];
 
   const PAGE_META = {
+    jurnal:    { label: 'E-Jurnal',     icon: 'fa-solid fa-book-open',        module: EJurnalPage   },
     home:      { label: 'Beranda',      icon: 'fa-solid fa-house',            module: DashboardPage },
     jadwal:    { label: 'Jadwal',       icon: 'fa-regular fa-calendar-check', module: JadwalPage    },
-    jurnal:    { label: 'E-Jurnal',     icon: 'fa-solid fa-book-open',        module: EJurnalPage   },
-    absen:     { label: 'Absensi',      icon: 'fa-solid fa-camera-retro',     module: AbsenPage     },
     perangkat: { label: 'Perangkat',    icon: 'fa-solid fa-folder-open',      module: PerangkatPage, locked: true },
     pkl:       { label: 'Jurnal PKL',   icon: 'fa-solid fa-briefcase',        module: PKLPage,       locked: true },
     supervisi: { label: 'Supervisi',    icon: 'fa-solid fa-clipboard-check',  module: SupervisiPage, locked: true },
@@ -185,7 +184,10 @@ const App = (() => {
 
     _renderNav();
     _renderUserInfo();
-    navigateTo('home');
+    
+    // Default landing page: guru & waka langsung ke E-Jurnal
+    const defaultPage = (_user.role === 'guru' || _user.role === 'waka') ? 'jurnal' : 'home';
+    navigateTo(defaultPage);
   }
 
   function _renderNav() {

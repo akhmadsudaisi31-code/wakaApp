@@ -709,6 +709,36 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .skeleton-text { height: 38px; margin-bottom: 12px; }
 
 
+/* Tabs */
+.page-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.page-tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.page-tab-btn:hover {
+  color: var(--green);
+}
+.page-tab-btn.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+
 /* ============================================
    DASHBOARD
    ============================================ */

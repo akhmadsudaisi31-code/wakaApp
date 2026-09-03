@@ -143,6 +143,9 @@ function doPost(e) {
       case 'getFormDataJurnal':
         return _jsonResponse(api_getFormDataJurnal());
 
+      case 'getRiwayatJurnal':
+        return _jsonResponse(api_getRiwayatJurnal());
+
       case 'submitJurnal':
         return _jsonResponse(api_submitJurnal(payload));
 
