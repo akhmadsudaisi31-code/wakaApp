@@ -95,6 +95,47 @@ function api_submitJurnal(payload) {
       statusKehadiran += " (Inval)";
     }
     
+    let dokumentasiUrl = payload.link_dokumentasi || "";
+
+    // Jika ada file foto gambar yang diunggah langsung (base64)
+    if (payload.foto_base64) {
+      try {
+        const folderName = "Dokumentasi_EJurnal";
+        let rootFolder;
+        const rootQuery = DriveApp.getFoldersByName(folderName);
+        if (rootQuery.hasNext()) {
+          rootFolder = rootQuery.next();
+        } else {
+          rootFolder = DriveApp.createFolder(folderName);
+        }
+
+        const guruFolderName = `${user.nama || user.id_guru}_${user.id_guru}`.replace(/[\\/:*?"<>|]/g, '_').trim();
+        let guruFolder;
+        const gQuery = rootFolder.getFoldersByName(guruFolderName);
+        if (gQuery.hasNext()) {
+          guruFolder = gQuery.next();
+        } else {
+          guruFolder = rootFolder.createFolder(guruFolderName);
+        }
+
+        // Format nama file: Jurnal_Kelas_Tanggal_Waktu
+        const safeKelas = (payload.id_kelas || 'Kelas').replace(/[\\/:*?"<>|]/g, '_');
+        const filename = `Jurnal_${safeKelas}_${todayStr}_${Date.now()}.jpg`;
+
+        // Decode base64
+        const parts = payload.foto_base64.split(',');
+        const base64Data = parts.length > 1 ? parts[1] : parts[0];
+        const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), 'image/jpeg', filename);
+
+        const uploadedFile = guruFolder.createFile(blob);
+        uploadedFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        dokumentasiUrl = uploadedFile.getUrl();
+      } catch (driveErr) {
+        Logger.log('Gagal upload gambar jurnal ke Drive: ' + driveErr.message);
+        // Fallback tetap lanjutkan penyimpanan data jurnal meski foto gagal
+      }
+    }
+
     // Buat rowData berdasarkan urutan header yang ada di sheet
     const dataJurnal = sheetJurnal.getDataRange().getValues();
     const headJurnal = dataJurnal[0];
@@ -120,7 +161,7 @@ function api_submitJurnal(payload) {
       "jumlah_alpa": payload.jumlah_alpa || 0,
       "catatan_kendala": payload.catatan_kendala || "",
       "status_kehadiran": statusKehadiran,
-      "link_dokumentasi": payload.link_dokumentasi || ""
+      "link_dokumentasi": dokumentasiUrl
     };
 
     let rowData = headJurnal.map(h => (valueMap[h] !== undefined ? valueMap[h] : ""));

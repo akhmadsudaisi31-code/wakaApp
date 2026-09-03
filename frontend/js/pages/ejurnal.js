@@ -112,15 +112,32 @@ const EJurnalPage = (() => {
               </div>
             </div>
 
-            <!-- Link Dokumentasi / Foto Kegiatan -->
+            <!-- Upload Foto Kegiatan KBM (Langsung dari Kamera / Galeri HP) -->
             <div class="form-group">
-              <label class="form-label" for="jur_link_dok">
-                <i class="fa-solid fa-camera" style="color:var(--green);"></i> Link Foto Kegiatan / Dokumentasi KBM (Opsional)
+              <label class="form-label">
+                <i class="fa-solid fa-camera" style="color:var(--green);"></i> Foto Kegiatan KBM / Dokumentasi (Opsional)
               </label>
-              <input type="url" id="jur_link_dok" class="form-control" placeholder="https://drive.google.com/... atau link foto online">
-              <span style="display:block; font-size:0.75rem; color:var(--text-muted); margin-top:3px;">
-                Unggah foto ke Google Drive atau penyimpanan cloud, lalu cantumkan link publiknya di sini.
-              </span>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <input type="file" id="jur_file_foto" class="form-control" accept="image/*" capture="environment" onchange="EJurnalPage._onPhotoSelected(event)">
+                
+                <!-- Preview Gambar & Tombol Hapus -->
+                <div id="jur-foto-preview-container" style="display:none; position:relative; max-width:240px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                  <img id="jur-foto-preview" src="" alt="Preview Dokumentasi" style="width:100%; height:auto; display:block;">
+                  <button type="button" onclick="EJurnalPage._clearPhoto()" class="btn btn-danger btn-sm" style="position:absolute; top:6px; right:6px; padding:3px 8px; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                
+                <!-- Alternatif Link Drive Jika Tidak Upload File -->
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="EJurnalPage._toggleLinkDoc()" style="font-size:0.75rem; color:var(--text-muted); padding:0; text-decoration:underline;">
+                    atau gunakan tautan link online (opsional)
+                  </button>
+                </div>
+                <div id="div-link-doc" style="display:none; margin-top:4px;">
+                  <input type="url" id="jur_link_dok" class="form-control" placeholder="https://drive.google.com/... tautan foto">
+                </div>
+              </div>
             </div>
 
             <!-- Catatan Kendala KBM -->
@@ -370,6 +387,72 @@ const EJurnalPage = (() => {
     }
   }
 
+  let _selectedPhotoBase64 = null;
+
+  function _toggleLinkDoc() {
+    const div = document.getElementById('div-link-doc');
+    if (div) {
+      div.style.display = div.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  function _onPhotoSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    // Kompresi sisi klien via Canvas agar ringan (< 300KB)
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        const maxWidth = 1000;
+        const maxHeight = 1000;
+        let w = img.width;
+        let h = img.height;
+
+        if (w > h) {
+          if (w > maxWidth) {
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          }
+        } else {
+          if (h > maxHeight) {
+            w = Math.round((w * maxHeight) / h);
+            h = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Kualitas JPEG 0.7
+        _selectedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        const previewImg = document.getElementById('jur-foto-preview');
+        const container = document.getElementById('jur-foto-preview-container');
+        if (previewImg && container) {
+          previewImg.src = _selectedPhotoBase64;
+          container.style.display = 'block';
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function _clearPhoto() {
+    _selectedPhotoBase64 = null;
+    const fileInput = document.getElementById('jur_file_foto');
+    const container = document.getElementById('jur-foto-preview-container');
+    const previewImg = document.getElementById('jur-foto-preview');
+    if (fileInput) fileInput.value = '';
+    if (container) container.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+  }
+
   async function _handleSubmit(e) {
     e.preventDefault();
 
@@ -383,6 +466,8 @@ const EJurnalPage = (() => {
     if (atpVal === 'LAINNYA') atpVal = '';
     else if (atpVal !== '') materiBebas = '';
 
+    const linkDocInput = document.getElementById('jur_link_dok');
+
     const payload = {
       id_kelas: jadwal.id_kelas,
       mapel: jadwal.mapel,
@@ -393,7 +478,8 @@ const EJurnalPage = (() => {
       jumlah_sakit: parseInt(document.getElementById('jur_sakit').value) || 0,
       jumlah_izin:  parseInt(document.getElementById('jur_izin').value)  || 0,
       jumlah_alpa:  parseInt(document.getElementById('jur_alpa').value)  || 0,
-      link_dokumentasi: document.getElementById('jur_link_dok').value.trim(),
+      link_dokumentasi: linkDocInput ? linkDocInput.value.trim() : '',
+      foto_base64: _selectedPhotoBase64 || '',
       catatan_kendala: document.getElementById('jur_kendala').value.trim(),
       isInval: document.getElementById('jur_is_inval').checked,
     };
@@ -407,6 +493,7 @@ const EJurnalPage = (() => {
       if (res.success) {
         toast('success', res.message || 'Jurnal berhasil disimpan!');
         document.getElementById('form-jurnal').reset();
+        _clearPhoto();
         _toggleInval(false);
         document.getElementById('div-materi-bebas').style.display = 'none';
         
@@ -433,6 +520,9 @@ const EJurnalPage = (() => {
     _toggleInval,
     _onJadwalSelect,
     _onAtpChange,
+    _onPhotoSelected,
+    _clearPhoto,
+    _toggleLinkDoc,
     _handleSubmit,
     _loadFormData,
     _loadRiwayatData
