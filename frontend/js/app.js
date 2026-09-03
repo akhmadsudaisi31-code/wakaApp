@@ -465,7 +465,7 @@ const App = (() => {
     }, duration);
   }
 
-  return { init, devLogin, logout, navigateTo, getUser, toggleSidebar, _pinKey, _pinCancel, showLoading, hideLoading, toast };
+  return { init, devLogin, logout, navigateTo, getUser, toggleSidebar, _pinKey, _pinCancel, showLoading, hideLoading, toast, redirectToGASLogin };
 })();
 
 // === INIT ===
