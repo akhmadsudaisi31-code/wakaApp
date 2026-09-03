@@ -71,6 +71,9 @@ const API = (() => {
 
     const fetchPromise = fetch(CONFIG.GAS_URL, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
       body: body
     }).then(async response => {
       if (!response.ok) throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
